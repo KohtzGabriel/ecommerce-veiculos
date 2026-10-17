@@ -3,7 +3,6 @@ package br.unitins.tp2.dto;
 import org.hibernate.validator.constraints.Length;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
 public record EnderecoRequestDTO(
@@ -26,6 +25,11 @@ public record EnderecoRequestDTO(
         @Length(max = 80, message = "O bairro deve conter no máximo 80 caracteres.")
         String bairro,
 
-        @NotNull(message = "O município deve ser informado.")
-        Long municipioId) {
+        @NotBlank(message = "A cidade deve ser informada.")
+        @Length(max = 80, message = "A cidade deve conter no máximo 80 caracteres.")
+        String cidade,
+
+        @NotBlank(message = "A UF deve ser informada.")
+        @Pattern(regexp = "[A-Za-z]{2}", message = "A UF deve conter duas letras.")
+        String estado) {
 }
