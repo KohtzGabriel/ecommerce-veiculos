@@ -1,13 +1,13 @@
-# Cadastro de cliente — Quarkus e Angular
+# Motore — E-commerce de veículos
 
-O projeto está dividido em:
+Aplicação de gestão para uma loja de veículos, com API Java/Quarkus e interface Angular. A área do cliente limita-se ao login e ao mostruário público de veículos; cadastros administrativos são protegidos por JWT.
 
-- `backend/`: API Quarkus com PostgreSQL em desenvolvimento, H2 isolado para testes, cadastro de cliente e consulta de CEP pela ViaCEP.
-- `frontend/`: aplicação Angular com formulário reativo, validações e preenchimento automático/manual do endereço.
+- `backend/`: API Quarkus, PostgreSQL e integração de consulta de CEP com fallback manual.
+- `frontend/`: aplicação Angular para gestão da loja, login e catálogo.
 
 ## Backend
 
-Requisitos: Java 25 e PostgreSQL. O banco padrão do repositório de referência é `topicos2db`, com usuário `topicos2` e senha `123456`.
+Requisitos: Java 25 e PostgreSQL. Configure `DB_USERNAME`, `DB_PASSWORD` e `DB_URL` para apontar para seu banco local.
 
 ```powershell
 cd backend
@@ -18,9 +18,10 @@ O backend fica em `http://localhost:8080`.
 
 Endpoints principais:
 
-- `GET /ceps/{cep}` consulta a ViaCEP e resolve município/estado estruturados.
-- `GET /municipios?page=0&pageSize=1000` lista municípios para o fallback manual.
-- `POST /clientes` cadastra o cliente com `Pessoa`, `Endereco` e `Municipio`.
+- `POST /auth/login` autentica e retorna JWT.
+- `GET /catalogo/veiculos` lista veículos disponíveis.
+- Rotas de gestão ficam sob `/admin` e exigem perfil `ADMINISTRADOR`.
+- `GET /ceps/{cep}` consulta a ViaCEP; indisponibilidade não impede o preenchimento manual.
 
 ## Frontend
 
@@ -31,7 +32,7 @@ npm start
 
 O Angular fica em `http://localhost:4200`.
 
-Se a ViaCEP estiver indisponível, a tela informa a indisponibilidade e mantém logradouro, número, bairro e município editáveis para o preenchimento manual.
+Se a ViaCEP estiver indisponível, a tela mantém logradouro, número, bairro, cidade e UF editáveis para o preenchimento manual. Cidades/UF são associadas internamente ao endereço; não há endpoints de manutenção geográfica.
 
 ## Verificação
 

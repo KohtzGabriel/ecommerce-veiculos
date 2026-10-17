@@ -8,10 +8,10 @@ import { CepApiService } from '../../core/api/cep-api.service';
 
 type Section = 'pessoas' | 'clientes' | 'usuarios' | 'fornecedores' | 'marcas' | 'veiculos' | 'notas-fiscais' | 'enderecos';
 type Row = Record<string, any> & {
-  id?: number; ativo?: boolean; bairro?: string; chassi?: string; cnpj?: string | null; complemento?: string;
+  id?: number; ativo?: boolean; bairro?: string; chassi?: string; cidade?: string; cnpj?: string | null; complemento?: string;
   cor?: string; cpf?: string | null; cep?: string; dataEmissao?: string; dataNascimento?: string | null; descricao?: string;
   email?: string; endereco?: any; entrada?: boolean; genero?: string; logradouro?: string; marcaId?: number;
-  marcaNome?: string; municipioId?: number; modelo?: string; nome?: string; nomeFantasia?: string;
+  marcaNome?: string; municipio?: string; estado?: string; modelo?: string; nome?: string; nomeFantasia?: string;
   numero?: string; perfilId?: number; perfis?: any[]; pessoaJuridicaId?: number; placa?: string;
   produtoId?: number; quilometragem?: number; razaoSocial?: string | null; renavam?: string; senha?: string;
   serie?: string; status?: string; tipoPessoa?: string; telefone?: string; valorCusto?: number;
@@ -26,7 +26,7 @@ const MODULES: Record<Section, { title: string; description: string; endpoint: s
   pessoas: {
     title: 'Pessoas', description: 'Cadastros de pessoas físicas e jurídicas da loja.', endpoint: 'admin/pessoas',
     columns: [{ key: 'nome', label: 'Nome / razão social' }, { key: 'tipoPessoa', label: 'Tipo' }, { key: 'cpf', label: 'CPF' }, { key: 'cnpj', label: 'CNPJ' }, { key: 'email', label: 'E-mail' }],
-    fields: [{ name: 'tipoPessoa', label: 'Tipo de pessoa', type: 'select', required: true, options: [{ id: 'FISICA', nome: 'Pessoa física' }, { id: 'JURIDICA', nome: 'Pessoa jurídica' }] }, text('nome', 'Nome', true, 120), text('email', 'E-mail', true, 120), text('genero', 'Gênero'), text('cpf', 'CPF'), { name: 'dataNascimento', label: 'Data de nascimento', type: 'date' }, text('cnpj', 'CNPJ'), text('razaoSocial', 'Razão social'), text('nomeFantasia', 'Nome fantasia'), text('cep', 'CEP'), text('logradouro', 'Logradouro'), text('numero', 'Número'), text('complemento', 'Complemento'), text('bairro', 'Bairro'), { name: 'municipioId', label: 'Município', type: 'select', options: [] }],
+    fields: [{ name: 'tipoPessoa', label: 'Tipo de pessoa', type: 'select', required: true, options: [{ id: 'FISICA', nome: 'Pessoa física' }, { id: 'JURIDICA', nome: 'Pessoa jurídica' }] }, text('nome', 'Nome', true, 120), text('email', 'E-mail', true, 120), text('genero', 'Gênero'), text('cpf', 'CPF'), { name: 'dataNascimento', label: 'Data de nascimento', type: 'date' }, text('cnpj', 'CNPJ'), text('razaoSocial', 'Razão social'), text('nomeFantasia', 'Nome fantasia'), text('cep', 'CEP'), text('logradouro', 'Logradouro'), text('numero', 'Número'), text('complemento', 'Complemento'), text('bairro', 'Bairro'), text('cidade', 'Cidade', false, 80), text('estado', 'UF', false, 2)],
   },
   clientes: { title: 'Clientes', description: 'Localize clientes pelo CPF ou associe uma pessoa já cadastrada.', endpoint: 'admin/clientes', columns: [], fields: [] },
   usuarios: {
@@ -45,7 +45,7 @@ const MODULES: Record<Section, { title: string; description: string; endpoint: s
   enderecos: {
     title: 'Endereços', description: 'Mantenha os endereços e consulte o CEP quando o serviço estiver disponível.', endpoint: 'admin/enderecos',
     columns: [{ key: 'logradouro', label: 'Logradouro' }, { key: 'bairro', label: 'Bairro' }, { key: 'municipio', label: 'Município' }, { key: 'estado', label: 'UF' }, { key: 'cep', label: 'CEP' }],
-    fields: [text('cep', 'CEP', true, 9), text('logradouro', 'Logradouro', true, 120), text('numero', 'Número', true, 20), text('complemento', 'Complemento', false, 120), text('bairro', 'Bairro', true, 80), { name: 'municipioId', label: 'Município', type: 'select', required: true, options: [] }],
+    fields: [text('cep', 'CEP', true, 9), text('logradouro', 'Logradouro', true, 120), text('numero', 'Número', true, 20), text('complemento', 'Complemento', false, 120), text('bairro', 'Bairro', true, 80), text('cidade', 'Cidade', true, 80), text('estado', 'UF', true, 2)],
   },
 };
 
@@ -76,7 +76,6 @@ export class AdminWorkspace implements OnInit {
   readonly filtroStatus = signal('');
   readonly pessoaJuridica = signal<{ id: number; nome: string }[]>([]);
   readonly pessoasDisponiveis = signal<{ id: number; nome: string; tipoPessoa: string }[]>([]);
-  readonly municipios = signal<{ id: number; nome: string }[]>([]);
   readonly marcas = signal<{ id: number; nome: string }[]>([]);
   readonly resultadoCliente = signal<Row | null>(null);
   readonly pessoaIdCliente = signal('');
@@ -110,7 +109,7 @@ export class AdminWorkspace implements OnInit {
     if (this.section === 'veiculos') { this.carregarVeiculos(); void this.carregarOpcoes(); return; }
     this.criarControles();
     this.carregarLista();
-    if (this.section === 'fornecedores' || this.section === 'enderecos' || this.section === 'pessoas') void this.carregarOpcoes();
+    if (this.section === 'fornecedores' || this.section === 'pessoas') void this.carregarOpcoes();
   }
 
   private criarControles(): void {
@@ -161,21 +160,11 @@ export class AdminWorkspace implements OnInit {
     return new Promise((resolve) => {
       let pending = 0;
       const done = () => { if (--pending <= 0) resolve(); };
-      if (['fornecedores', 'enderecos', 'pessoas'].includes(this.section)) {
+      if (['fornecedores', 'pessoas'].includes(this.section)) {
         pending++;
         this.api.get<any[]>('admin/pessoas').subscribe({ next: (pessoas) => {
           this.pessoaJuridica.set(pessoas.filter((p) => p.tipoPessoa === 'JURIDICA').map((p) => ({ id: p.id, nome: p.razaoSocial || p.nome })));
           if (this.section === 'fornecedores') this.config.fields[0].options = this.pessoaJuridica();
-          done();
-        }, error: () => done() });
-      }
-      if (['enderecos', 'pessoas'].includes(this.section)) {
-        pending++;
-        this.api.get<any>('municipios', { page: 0, pageSize: 100 }).subscribe({ next: (data) => {
-          const list = data.items ?? [];
-          this.municipios.set(list.map((m: any) => ({ id: m.id, nome: `${m.nome} - ${m.estado?.sigla ?? ''}` })));
-          const field = this.config.fields.find((item) => item.name === 'municipioId');
-          if (field) field.options = this.municipios();
           done();
         }, error: () => done() });
       }
@@ -202,11 +191,11 @@ export class AdminWorkspace implements OnInit {
   editar(row: Row): void {
     this.editingId.set(row.id ?? null);
     const values: Row = { ...row };
-    if (this.section === 'enderecos') values.municipioId = row.municipioId;
+    if (this.section === 'enderecos') { values.cidade = row.municipio; values.estado = row.estado; }
     if (this.section === 'pessoas') {
       values.cep = row.endereco?.cep ?? ''; values.logradouro = row.endereco?.logradouro ?? '';
       values.numero = row.endereco?.numero ?? ''; values.complemento = row.endereco?.complemento ?? '';
-      values.bairro = row.endereco?.bairro ?? ''; values.municipioId = row.endereco?.municipioId ?? '';
+      values.bairro = row.endereco?.bairro ?? ''; values.cidade = row.endereco?.municipio ?? ''; values.estado = row.endereco?.estado ?? '';
     }
     if (this.section === 'usuarios') {
       values.perfilId = row.perfis?.[0]?.id ?? 2; values.senha = '';
@@ -229,7 +218,7 @@ export class AdminWorkspace implements OnInit {
     if (this.section === 'pessoas') {
       if (values.tipoPessoa === 'FISICA' && (!values.cpf || !values.dataNascimento)) { this.erro.set('CPF e data de nascimento são obrigatórios para pessoa física.'); return; }
       if (values.tipoPessoa === 'JURIDICA' && (!values.cnpj || !values.razaoSocial)) { this.erro.set('CNPJ e razão social são obrigatórios para pessoa jurídica.'); return; }
-      if (values.cep && (!values.logradouro || !values.numero || !values.bairro || !values.municipioId)) { this.erro.set('Complete os dados do endereço ou remova o CEP para salvar sem endereço.'); return; }
+      if (values.cep && (!values.logradouro || !values.numero || !values.bairro || !values.cidade || !values.estado)) { this.erro.set('Complete os dados do endereço ou remova o CEP para salvar sem endereço.'); return; }
     }
     const body = this.payload(); this.salvando.set(true); this.erro.set('');
     const id = this.editingId();
@@ -242,11 +231,11 @@ export class AdminWorkspace implements OnInit {
   private payload(): Row {
     const v = this.form.getRawValue() as Row;
     if (this.section === 'pessoas') {
-      const endereco = v.cep ? { cep: v.cep, logradouro: v.logradouro, numero: v.numero, complemento: v.complemento || '', bairro: v.bairro, municipioId: Number(v.municipioId) } : null;
+      const endereco = v.cep ? { cep: v.cep, logradouro: v.logradouro, numero: v.numero, complemento: v.complemento || '', bairro: v.bairro, cidade: v.cidade, estado: v.estado } : null;
       return { tipoPessoa: v.tipoPessoa, nome: v.nome, email: v.email, genero: v.genero || '', cpf: v.tipoPessoa === 'FISICA' ? v.cpf : null, dataNascimento: v.tipoPessoa === 'FISICA' ? v.dataNascimento : null, cnpj: v.tipoPessoa === 'JURIDICA' ? v.cnpj : null, razaoSocial: v.tipoPessoa === 'JURIDICA' ? v.razaoSocial : null, nomeFantasia: v.nomeFantasia || '', endereco };
     }
     if (this.section === 'fornecedores') return { pessoaJuridicaId: Number(v.pessoaJuridicaId), ativo: Boolean(v.ativo) };
-    if (this.section === 'enderecos') return { cep: v.cep, logradouro: v.logradouro, numero: v.numero, complemento: v.complemento || '', bairro: v.bairro, municipioId: Number(v.municipioId) };
+    if (this.section === 'enderecos') return { cep: v.cep, logradouro: v.logradouro, numero: v.numero, complemento: v.complemento || '', bairro: v.bairro, cidade: v.cidade, estado: v.estado };
     if (this.section === 'usuarios') {
       if (this.editingId()) return { ativo: Boolean(v.ativo), perfis: [Number(v.perfilId)], ...(v.senha ? { senha: v.senha } : {}) };
       return { nome: v.nome, email: v.email, cpf: String(v.cpf ?? '').replace(/\D/g, ''), dataNascimento: v.dataNascimento, genero: '', endereco: '', senha: v.senha, telefones: [{ codigoArea: String(v.codigoArea).replace(/\D/g, ''), numero: String(v.telefone).replace(/\D/g, ''), whatsapp: false }], perfis: [Number(v.perfilId)] };
@@ -320,8 +309,8 @@ export class AdminWorkspace implements OnInit {
     this.cepAviso.set('Consultando CEP…');
     this.cepApi.buscar(cep).subscribe({ next: (data) => {
       if (!data) { this.cepAviso.set('CEP não encontrado. Preencha o endereço manualmente.'); return; }
-      this.form.patchValue({ logradouro: data.logradouro, bairro: data.bairro, municipioId: data.municipioId });
-      this.cepAviso.set(data.municipioId ? `Endereço localizado: ${data.municipio} - ${data.estado}.` : 'CEP localizado; escolha o município e complete os dados que faltam.');
+      this.form.patchValue({ logradouro: data.logradouro, bairro: data.bairro, cidade: data.municipio, estado: data.estado });
+      this.cepAviso.set(`Endereço localizado: ${data.municipio} - ${data.estado}. Confira e complete os dados que faltam.`);
     }, error: () => this.cepAviso.set('Consulta indisponível. Preencha os dados do endereço manualmente.') });
   }
 

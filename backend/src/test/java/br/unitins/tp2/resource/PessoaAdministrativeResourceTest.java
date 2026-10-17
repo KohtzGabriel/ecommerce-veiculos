@@ -32,7 +32,8 @@ class PessoaAdministrativeResourceTest {
                             "logradouro": "Praca dos Girassois",
                             "numero": "100",
                             "bairro": "Plano Diretor Sul",
-                            "municipioId": 1
+                            "cidade": "Cidade de Teste",
+                            "estado": "TO"
                           }
                         }
                         """.formatted(cnpj))
@@ -41,7 +42,9 @@ class PessoaAdministrativeResourceTest {
                 .statusCode(201)
                 .body("id", notNullValue())
                 .body("tipoPessoa", equalTo("JURIDICA"))
-                .body("cnpj", equalTo(cnpj));
+                .body("cnpj", equalTo(cnpj))
+                .body("endereco.municipio", equalTo("Cidade de Teste"))
+                .body("endereco.estado", equalTo("TO"));
     }
 
     @Test

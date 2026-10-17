@@ -6,8 +6,8 @@ import br.unitins.tp2.exception.ResourceNotFoundException;
 import br.unitins.tp2.exception.ValidationException;
 import br.unitins.tp2.mapper.EnderecoMapper;
 import br.unitins.tp2.model.*;
-import br.unitins.tp2.repository.MunicipioRepository;
 import br.unitins.tp2.repository.PessoaRepository;
+import br.unitins.tp2.service.LocalidadeService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -22,7 +22,7 @@ import java.util.List;
 @RolesAllowed("ADMINISTRADOR")
 public class PessoaAdministrativaResource {
  @Inject PessoaRepository pessoas;
- @Inject MunicipioRepository municipios;
+ @Inject LocalidadeService localidades;
 
  @GET @Transactional public List<PessoaAdministrativaResponse> all(){return pessoas.findAll().list().stream().map(this::response).toList();}
  @GET @Path("/{id}") @Transactional public PessoaAdministrativaResponse get(@PathParam("id") long id){return response(find(id));}
@@ -45,7 +45,7 @@ public class PessoaAdministrativaResource {
    p.setNome(d.nome());p.setEmail(d.email());p.setGenero(d.genero());
    if(p instanceof PessoaFisica pf){if(d.cpf()==null||d.dataNascimento()==null)throw ValidationException.of("cpf","CPF e data de nascimento são obrigatórios para pessoa física.");pf.setCpf(d.cpf());pf.setDataNascimento(d.dataNascimento());}
    else if(p instanceof PessoaJuridica pj){if(d.cnpj()==null||d.razaoSocial()==null)throw ValidationException.of("cnpj","CNPJ e razão social são obrigatórios para pessoa jurídica.");pj.setCnpj(d.cnpj());pj.setRazaoSocial(d.razaoSocial());pj.setNomeFantasia(d.nomeFantasia());}
-   if(d.endereco()!=null){var e=d.endereco();var m=municipios.findById(e.municipioId());if(m==null)throw ValidationException.of("endereco.municipioId","Município não encontrado.");Endereco a=p.getEndereco();if(a==null)a=new Endereco();a.setCep(e.cep().replaceAll("\\D",""));a.setLogradouro(e.logradouro());a.setNumero(e.numero());a.setComplemento(e.complemento());a.setBairro(e.bairro());a.setMunicipio(m);p.setEndereco(a);}
+   if(d.endereco()!=null){var e=d.endereco();var m=localidades.resolverOuCriar(e.cidade(),e.estado());Endereco a=p.getEndereco();if(a==null)a=new Endereco();a.setCep(e.cep().replaceAll("\\D",""));a.setLogradouro(e.logradouro());a.setNumero(e.numero());a.setComplemento(e.complemento());a.setBairro(e.bairro());a.setMunicipio(m);p.setEndereco(a);}
  }
  private PessoaAdministrativaResponse response(Pessoa p){PessoaFisica pf=p instanceof PessoaFisica f?f:null;PessoaJuridica pj=p instanceof PessoaJuridica j?j:null;return new PessoaAdministrativaResponse(p.getId(),pf==null?"JURIDICA":"FISICA",p.getNome(),p.getEmail(),pf==null?null:pf.getCpf(),pf==null?null:pf.getDataNascimento(),pj==null?null:pj.getCnpj(),pj==null?null:pj.getRazaoSocial(),pj==null?null:pj.getNomeFantasia(),p.getEndereco()==null?null:EnderecoMapper.toResponse(p.getEndereco()));}
 }

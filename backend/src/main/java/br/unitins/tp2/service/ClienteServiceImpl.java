@@ -28,16 +28,13 @@ public class ClienteServiceImpl implements ClienteService {
     PessoaRepository pessoaRepository;
 
     @Inject
-    MunicipioRepository municipioRepository;
+    LocalidadeService localidades;
 
     @Override
     @Transactional
     public Cliente create(ClienteRequestDTO dto) {
         validarDuplicidade(dto);
-        var municipio = municipioRepository.findById(dto.endereco().municipioId());
-        if (municipio == null) {
-            throw ValidationException.of("endereco.municipioId", "O município informado não foi encontrado.");
-        }
+        var municipio = localidades.resolverOuCriar(dto.endereco().cidade(), dto.endereco().estado());
 
         var pessoa = new PessoaFisica();
         pessoa.setNome(dto.nome());

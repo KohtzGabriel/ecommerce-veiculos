@@ -1,6 +1,6 @@
-# sga
+# API Motore — E-commerce de veículos
 
-Este backend também expõe o cadastro estruturado de clientes em `/clientes` e a consulta de CEP em `/ceps/{cep}`. Consulte `../README.md` e `../docs/api/cliente-cep.md` para o fluxo desta entrega.
+API de gestão de loja desenvolvida com Quarkus. Consulte [`../README.md`](../README.md) para iniciar backend e frontend. As rotas administrativas exigem JWT com perfil `ADMINISTRADOR`; o catálogo e a consulta de CEP são públicos. Os dados de cidade e UF são recebidos no cadastro de endereços e resolvidos internamente, sem endpoints geográficos.
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
