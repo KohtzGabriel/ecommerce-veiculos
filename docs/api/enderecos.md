@@ -9,7 +9,7 @@
   "cep": "77001000",
   "logradouro": "Praça dos Girassóis",
   "bairro": "Plano Diretor Sul",
-  "municipio": "Palmas",
+  "cidade": "Palmas",
   "estado": "TO"
 }
 ```
@@ -32,4 +32,4 @@ Os endpoints administrativos de pessoa/endereço recebem `cidade` e `estado` (UF
 }
 ```
 
-O backend associa ou cria os registros geográficos internamente. Não há rotas REST para pacientes, psicólogos, estados, municípios ou regiões.
+Cidade e UF são armazenadas diretamente no endereço; não existem entidades nem rotas separadas para localidade.

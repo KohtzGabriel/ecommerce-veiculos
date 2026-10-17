@@ -6,7 +6,6 @@ public record EnderecoResponseDTO(
         String numero,
         String complemento,
         String bairro,
-        Long municipioId,
-        String municipio,
+        String cidade,
         String estado) {
 }

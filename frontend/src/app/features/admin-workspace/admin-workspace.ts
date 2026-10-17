@@ -11,7 +11,7 @@ type Row = Record<string, any> & {
   id?: number; ativo?: boolean; bairro?: string; chassi?: string; cidade?: string; cnpj?: string | null; complemento?: string;
   cor?: string; cpf?: string | null; cep?: string; dataEmissao?: string; dataNascimento?: string | null; descricao?: string;
   email?: string; endereco?: any; entrada?: boolean; genero?: string; logradouro?: string; marcaId?: number;
-  marcaNome?: string; municipio?: string; estado?: string; modelo?: string; nome?: string; nomeFantasia?: string;
+  marcaNome?: string; estado?: string; modelo?: string; nome?: string; nomeFantasia?: string;
   numero?: string; perfilId?: number; perfis?: any[]; pessoaJuridicaId?: number; placa?: string;
   produtoId?: number; quilometragem?: number; razaoSocial?: string | null; renavam?: string; senha?: string;
   serie?: string; status?: string; tipoPessoa?: string; telefone?: string; valorCusto?: number;
@@ -44,7 +44,7 @@ const MODULES: Record<Section, { title: string; description: string; endpoint: s
   'notas-fiscais': { title: 'Notas fiscais', description: 'Emita notas de entrada ou saída e consulte notas pelo identificador.', endpoint: 'admin/notas-fiscais', columns: [], fields: [] },
   enderecos: {
     title: 'Endereços', description: 'Mantenha os endereços e consulte o CEP quando o serviço estiver disponível.', endpoint: 'admin/enderecos',
-    columns: [{ key: 'logradouro', label: 'Logradouro' }, { key: 'bairro', label: 'Bairro' }, { key: 'municipio', label: 'Município' }, { key: 'estado', label: 'UF' }, { key: 'cep', label: 'CEP' }],
+    columns: [{ key: 'logradouro', label: 'Logradouro' }, { key: 'bairro', label: 'Bairro' }, { key: 'cidade', label: 'Cidade' }, { key: 'estado', label: 'UF' }, { key: 'cep', label: 'CEP' }],
     fields: [text('cep', 'CEP', true, 9), text('logradouro', 'Logradouro', true, 120), text('numero', 'Número', true, 20), text('complemento', 'Complemento', false, 120), text('bairro', 'Bairro', true, 80), text('cidade', 'Cidade', true, 80), text('estado', 'UF', true, 2)],
   },
 };
@@ -191,11 +191,11 @@ export class AdminWorkspace implements OnInit {
   editar(row: Row): void {
     this.editingId.set(row.id ?? null);
     const values: Row = { ...row };
-    if (this.section === 'enderecos') { values.cidade = row.municipio; values.estado = row.estado; }
+    if (this.section === 'enderecos') { values.cidade = row.cidade; values.estado = row.estado; }
     if (this.section === 'pessoas') {
       values.cep = row.endereco?.cep ?? ''; values.logradouro = row.endereco?.logradouro ?? '';
       values.numero = row.endereco?.numero ?? ''; values.complemento = row.endereco?.complemento ?? '';
-      values.bairro = row.endereco?.bairro ?? ''; values.cidade = row.endereco?.municipio ?? ''; values.estado = row.endereco?.estado ?? '';
+      values.bairro = row.endereco?.bairro ?? ''; values.cidade = row.endereco?.cidade ?? ''; values.estado = row.endereco?.estado ?? '';
     }
     if (this.section === 'usuarios') {
       values.perfilId = row.perfis?.[0]?.id ?? 2; values.senha = '';
@@ -309,8 +309,8 @@ export class AdminWorkspace implements OnInit {
     this.cepAviso.set('Consultando CEP…');
     this.cepApi.buscar(cep).subscribe({ next: (data) => {
       if (!data) { this.cepAviso.set('CEP não encontrado. Preencha o endereço manualmente.'); return; }
-      this.form.patchValue({ logradouro: data.logradouro, bairro: data.bairro, cidade: data.municipio, estado: data.estado });
-      this.cepAviso.set(`Endereço localizado: ${data.municipio} - ${data.estado}. Confira e complete os dados que faltam.`);
+      this.form.patchValue({ logradouro: data.logradouro, bairro: data.bairro, cidade: data.cidade, estado: data.estado });
+      this.cepAviso.set(`Endereço localizado: ${data.cidade} - ${data.estado}. Confira e complete os dados que faltam.`);
     }, error: () => this.cepAviso.set('Consulta indisponível. Preencha os dados do endereço manualmente.') });
   }
 

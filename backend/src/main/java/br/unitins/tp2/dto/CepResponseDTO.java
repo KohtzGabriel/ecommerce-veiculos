@@ -4,6 +4,6 @@ public record CepResponseDTO(
         String cep,
         String logradouro,
         String bairro,
-        String municipio,
+        String cidade,
         String estado) {
 }
