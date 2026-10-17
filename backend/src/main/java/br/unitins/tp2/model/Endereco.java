@@ -2,8 +2,6 @@ package br.unitins.tp2.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 
 @Entity
 public class Endereco extends DefaultEntity {
@@ -23,9 +21,11 @@ public class Endereco extends DefaultEntity {
     @Column(length = 80, nullable = false)
     private String bairro;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "id_municipio", nullable = false)
-    private Municipio municipio;
+    @Column(length = 80, nullable = false)
+    private String cidade;
+
+    @Column(length = 2, nullable = false)
+    private String estado;
 
     public String getCep() {
         return cep;
@@ -67,11 +67,19 @@ public class Endereco extends DefaultEntity {
         this.bairro = bairro;
     }
 
-    public Municipio getMunicipio() {
-        return municipio;
+    public String getCidade() {
+        return cidade;
     }
 
-    public void setMunicipio(Municipio municipio) {
-        this.municipio = municipio;
+    public void setCidade(String cidade) {
+        this.cidade = cidade;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
     }
 }

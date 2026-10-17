@@ -1,6 +1,8 @@
 # API Motore — E-commerce de veículos
 
-API de gestão de loja desenvolvida com Quarkus. Consulte [`../README.md`](../README.md) para iniciar backend e frontend. As rotas administrativas exigem JWT com perfil `ADMINISTRADOR`; o catálogo e a consulta de CEP são públicos. Os dados de cidade e UF são recebidos no cadastro de endereços e resolvidos internamente, sem endpoints geográficos.
+API de gestão de loja desenvolvida com Quarkus. Consulte [`../README.md`](../README.md) para iniciar backend e frontend. As rotas administrativas exigem JWT com perfil `ADMINISTRADOR`; o catálogo e a consulta de CEP são públicos. Cidade e UF são campos textuais do endereço; não existem entidades ou rotas geográficas separadas.
+
+Para bancos existentes, aplique manualmente [`src/main/resources/db/migration/V2__remove_legacy_domains.sql`](src/main/resources/db/migration/V2__remove_legacy_domains.sql) antes de iniciar esta versão. O script preserva cidade/UF dos endereços e remove as tabelas antigas de localidade e dos domínios sem uso.
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 

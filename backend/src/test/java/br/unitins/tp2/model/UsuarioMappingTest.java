@@ -32,8 +32,6 @@ class UsuarioMappingTest {
                     .addAnnotatedClass(PessoaFisica.class)
                     .addAnnotatedClass(PessoaJuridica.class)
                     .addAnnotatedClass(Endereco.class)
-                    .addAnnotatedClass(Municipio.class)
-                    .addAnnotatedClass(Estado.class)
                     .addAnnotatedClass(Telefone.class)
                     .getMetadataBuilder()
                     .applyAttributeConverter(PerfilConverter.class, true)

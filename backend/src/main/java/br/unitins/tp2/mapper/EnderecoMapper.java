@@ -15,8 +15,7 @@ public final class EnderecoMapper {
                 endereco.getNumero(),
                 endereco.getComplemento(),
                 endereco.getBairro(),
-                endereco.getMunicipio().getId(),
-                endereco.getMunicipio().getNome(),
-                endereco.getMunicipio().getEstado().getSigla());
+                endereco.getCidade(),
+                endereco.getEstado());
     }
 }

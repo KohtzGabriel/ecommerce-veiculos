@@ -43,7 +43,8 @@ class PessoaAdministrativeResourceTest {
                 .body("id", notNullValue())
                 .body("tipoPessoa", equalTo("JURIDICA"))
                 .body("cnpj", equalTo(cnpj))
-                .body("endereco.municipio", equalTo("Cidade de Teste"))
+                .body("endereco.cidade", equalTo("Cidade de Teste"))
+                .body("endereco.municipio", org.hamcrest.Matchers.nullValue())
                 .body("endereco.estado", equalTo("TO"));
     }
 

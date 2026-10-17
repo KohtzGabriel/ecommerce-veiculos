@@ -12,7 +12,6 @@ import br.unitins.tp2.model.Endereco;
 import br.unitins.tp2.model.Pessoa;
 import br.unitins.tp2.model.PessoaFisica;
 import br.unitins.tp2.repository.ClienteRepository;
-import br.unitins.tp2.repository.MunicipioRepository;
 import br.unitins.tp2.repository.PessoaRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -27,14 +26,10 @@ public class ClienteServiceImpl implements ClienteService {
     @Inject
     PessoaRepository pessoaRepository;
 
-    @Inject
-    LocalidadeService localidades;
-
     @Override
     @Transactional
     public Cliente create(ClienteRequestDTO dto) {
         validarDuplicidade(dto);
-        var municipio = localidades.resolverOuCriar(dto.endereco().cidade(), dto.endereco().estado());
 
         var pessoa = new PessoaFisica();
         pessoa.setNome(dto.nome());
@@ -50,7 +45,8 @@ public class ClienteServiceImpl implements ClienteService {
         endereco.setNumero(dto.endereco().numero());
         endereco.setComplemento(dto.endereco().complemento());
         endereco.setBairro(dto.endereco().bairro());
-        endereco.setMunicipio(municipio);
+        endereco.setCidade(dto.endereco().cidade());
+        endereco.setEstado(dto.endereco().estado().toUpperCase(java.util.Locale.ROOT));
 
         var cliente = new Cliente();
         cliente.setPessoa(pessoa);
