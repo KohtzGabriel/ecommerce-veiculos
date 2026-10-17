@@ -20,7 +20,7 @@ describe('AuthService', () => {
 
   it('salva JWT e perfil na sessão após autenticação', () => {
     auth.login({ login: 'admin@example.com', senha: 'uma-senha-valida' }, 'ADMINISTRADOR').subscribe();
-    const request = http.expectOne('http://localhost:8081/auth/login');
+    const request = http.expectOne('http://localhost:8080/auth/login');
     expect(request.request.method).toBe('POST');
     request.flush({
       accessToken: 'jwt-de-teste',
@@ -63,7 +63,7 @@ describe('AuthService', () => {
     let failed = false;
     currentAuth.login({ login: 'cliente@example.com', senha: 'senha' }, 'CLIENTE')
       .subscribe({ error: () => { failed = true; } });
-    currentHttp.expectOne('http://localhost:8081/auth/login').flush({
+    currentHttp.expectOne('http://localhost:8080/auth/login').flush({
       accessToken: 'admin-jwt', tokenType: 'Bearer', expiresAt: '2099-01-01T00:00:00Z', roles: ['ADMINISTRADOR'],
     });
 

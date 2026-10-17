@@ -32,14 +32,19 @@
         }
       </section>
       <section class="panel association-panel">
-        <h2>Associar pessoa como cliente</h2>
-        <p>A associação não cria nem remove a Pessoa. Para pessoa física, consulte primeiro pelo CPF.</p>
+        <h2>Vincular cliente</h2>
+        <p>Selecione um usuário pelo login ou uma pessoa cadastrada. O vínculo usa a mesma pessoa e só é gravado ao clicar em Salvar cliente.</p>
+        <label for="client-user-select">Usuário cadastrado</label>
+        <select id="client-user-select" [value]="pessoaIdCliente()" (change)="pessoaIdCliente.set($any($event.target).value)">
+          <option value="">Selecione um usuário</option>
+          @for (usuario of opcoesUsuariosCliente(); track usuario.pessoaId) { <option [value]="usuario.pessoaId">{{ usuario.nome }} · {{ usuario.login }}</option> }
+        </select>
         <label for="person-select">Pessoa cadastrada</label>
         <select id="person-select" [value]="pessoaIdCliente()" (change)="pessoaIdCliente.set($any($event.target).value)">
           <option value="">Selecione uma pessoa</option>
           @for (pessoa of pessoasDisponiveis(); track pessoa.id) { <option [value]="pessoa.id">{{ pessoa.nome }} · {{ pessoa.tipoPessoa }}</option> }
         </select>
-        <button class="primary-button" type="button" (click)="criarCliente()">Associar cliente</button>
+        <button class="primary-button" type="button" (click)="criarCliente()" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : 'Salvar cliente' }}</button>
       </section>
     </div>
   } @else if (section === 'notas-fiscais') {
@@ -51,12 +56,23 @@
             <button type="button" [class.selected]="!isEntrada()" (click)="setTipoNota(false)">Saída</button>
           </div>
         </div>
-        <form [formGroup]="notaForm" (ngSubmit)="salvarNota()">
+        <form [formGroup]="notaForm" (submit)="$event.preventDefault()">
           <div class="form-grid">
             <label>Número<input formControlName="numero" required></label>
             <label>Série<input formControlName="serie" required></label>
             <label>Data de emissão<input type="date" formControlName="dataEmissao" required></label>
-            @if (isEntrada()) { <label>Fornecedor (ID)<input type="number" min="1" formControlName="fornecedorId" placeholder="ID do fornecedor" required></label> }
+            @if (isEntrada()) {
+              <label for="invoice-supplier">Fornecedor
+                <select id="invoice-supplier" formControlName="fornecedorId" required>
+                  <option value="">{{ carregandoFornecedores() ? 'Carregando fornecedores…' : 'Selecione um fornecedor' }}</option>
+                  @for (fornecedor of fornecedoresNota(); track fornecedor.id) {
+                    <option [value]="fornecedor.id">{{ fornecedor.razaoSocial }} · {{ fornecedor.cnpj }}{{ fornecedor.ativo ? '' : ' (inativo)' }}</option>
+                  }
+                </select>
+                @if (erroFornecedores()) { <small class="field-error" role="alert">{{ erroFornecedores() }}</small> }
+                @else if (!carregandoFornecedores() && fornecedoresNota().length === 0) { <small>Cadastre um fornecedor na página Fornecedores antes de salvar a nota.</small> }
+              </label>
+            }
             @else { <label>Cliente (ID)<input type="number" min="1" formControlName="clienteId" placeholder="ID do cliente" required></label> }
           </div>
           <div class="form-divider"><span>Item da nota</span></div>
@@ -84,21 +100,21 @@
             </div>
             <p class="inline-note">Ao emitir a saída, o veículo passa automaticamente para VENDIDO.</p>
           }
-          <button class="primary-button" type="submit" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : 'Emitir nota fiscal' }}</button>
+          <footer class="dialog-actions"><button class="primary-button" type="button" (click)="salvarNota()" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : 'Salvar nota fiscal' }}</button></footer>
         </form>
       </section>
       <section class="panel lookup-panel">
-        <h2>Consultar nota</h2><p>A API permite consulta por identificador.</p>
-        <form class="inline-search" (submit)="$event.preventDefault(); buscarNota()"><label class="sr-only" for="nota-id">ID da nota</label><input id="nota-id" type="number" min="1" [value]="numeroNotaConsulta()" (input)="numeroNotaConsulta.set($any($event.target).value)" placeholder="ID da nota fiscal"><button class="secondary-button">Buscar</button></form>
-        @if (notaEncontrada(); as nf) {
+        <h2>Consultar notas fiscais</h2><p>Informe o ID ou deixe o campo vazio para buscar todas as notas cadastradas.</p>
+        <form class="inline-search" (submit)="$event.preventDefault(); buscarNota()"><label class="sr-only" for="nota-id">ID da nota</label><input id="nota-id" type="number" min="1" [value]="numeroNotaConsulta()" (input)="numeroNotaConsulta.set($any($event.target).value)" placeholder="ID da nota (opcional)"><button class="secondary-button" [disabled]="consultandoNotas()">{{ consultandoNotas() ? 'Buscando…' : 'Buscar' }}</button></form>
+        @for (nf of notasEncontradas(); track nf.id) {
           <div class="result-card note-result">
-            <strong>NF {{ nf['numero'] }} / série {{ nf['serie'] }}</strong>
+            <strong>NF {{ nf['numero'] }} / série {{ nf['serie'] }}</strong><span>ID {{ nf.id }}</span>
             <span>{{ nf['entrada'] ? 'Entrada' : 'Saída' }} · {{ nf['dataEmissao'] | date:'dd/MM/yyyy' }}</span>
             <strong>{{ nf['valorTotal'] | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
-            <button class="danger-button" type="button" (click)="excluirNota()">Excluir nota</button>
+            <button class="danger-button" type="button" (click)="excluirNota(nf)">Excluir nota</button>
           </div>
         }
-        <p class="inline-note">A API ainda não oferece consulta de coleção para listar o histórico.</p>
+        @if (consultaNotasRealizada() && notasEncontradas().length === 0) { <p class="inline-note" role="status">Nenhuma nota fiscal cadastrada.</p> }
       </section>
     </div>
   } @else if (section === 'veiculos') {
@@ -149,7 +165,7 @@
             </td>
           }
           <td class="row-actions">
-            @if (section === 'veiculos') { <button type="button" class="icon-button" [attr.aria-label]="'Ver detalhes de ' + row['modelo']" (click)="mostrarVeiculo(row)">Detalhes</button> }
+            @if (section === 'veiculos') { <button type="button" class="icon-button" [attr.aria-label]="'Ver detalhes de ' + row['modelo']" (click)="mostrarVeiculo(row)">Detalhes</button><button type="button" class="icon-button" [attr.aria-label]="'Editar preço de ' + row['modelo']" (click)="editar(row)">Editar</button> }
             @else { <button type="button" class="icon-button" [attr.aria-label]="'Editar registro ' + row['id']" (click)="editar(row)">Editar</button><button type="button" class="icon-button danger-text" [attr.aria-label]="'Excluir registro ' + row['id']" (click)="excluir(row)">Excluir</button> }
           </td>
         </tr>
@@ -162,18 +178,20 @@
   <div class="modal-backdrop" (click)="fecharModal()">
     <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" (click)="$event.stopPropagation()">
       <header class="dialog-header"><div><h2 id="dialog-title">{{ tituloAcao() }}</h2><p>{{ config.title }} · informações administrativas</p></div><button class="close-button" type="button" aria-label="Fechar formulário" (click)="fecharModal()">×</button></header>
-      <form [formGroup]="form" (ngSubmit)="salvar()" class="dialog-form">
+      <form [formGroup]="form" (submit)="$event.preventDefault()" class="dialog-form">
+        @if (erro()) { <p class="notice error" role="alert">{{ erro() }}</p> }
+        @if (section === 'pessoas' && !editingId()) { <p class="inline-note">Escolha também os vínculos no final do formulário. Pessoa e vínculos serão criados juntos ao clicar em Salvar cadastro. Para acesso de usuário, o e-mail será o login.</p> }
         <div class="form-grid">
           @for (field of config.fields; track field.name) {
             @if (fieldVisible(field.name)) {
               <label [class.wide-field]="['nome','email','razaoSocial','nomeFantasia','logradouro','complemento'].includes(field.name)">
-                {{ field.label }}
+                <span>{{ field.label }}@if (fieldRequired(field)) {<span aria-hidden="true"> *</span>}</span>
                 @if (field.type === 'select') {
-                  <select [formControlName]="field.name" [required]="field.required ?? false"><option value="">Selecione</option>@for (option of field.options ?? []; track option.id) {<option [value]="option.id">{{ option.nome }}</option>}</select>
+                  <select [formControlName]="field.name" [required]="fieldRequired(field)" (change)="atualizarVinculosPessoa()"><option value="">Selecione</option>@for (option of field.options ?? []; track option.id) {<option [value]="option.id">{{ option.nome }}</option>}</select>
                 } @else if (field.type === 'checkbox') {
-                  <span class="checkbox-row"><input type="checkbox" [formControlName]="field.name"><span>Ativo para operações da loja</span></span>
+                  <span class="checkbox-row"><input type="checkbox" [formControlName]="field.name" (change)="atualizarVinculosPessoa()"><span>{{ field.name === 'ativo' ? 'Ativo para operações da loja' : 'Incluir neste cadastro' }}</span></span>
                 } @else {
-                  <input [type]="field.type ?? (field.name.toLowerCase().includes('email') ? 'email' : 'text')" [formControlName]="field.name" [required]="field.required ?? false" [attr.maxlength]="field.maxLength" [attr.minlength]="field.name === 'senha' ? 15 : null" [attr.inputmode]="field.name === 'cep' || field.name === 'cpf' ? 'numeric' : null" (blur)="field.name === 'cep' ? consultarCep() : null">
+                  <input [type]="field.type ?? (field.name.toLowerCase().includes('email') ? 'email' : 'text')" [formControlName]="field.name" [attr.min]="field.name === 'valorVenda' ? 0 : null" [attr.step]="field.name === 'valorVenda' ? 0.01 : null" [required]="fieldRequired(field)" [attr.maxlength]="field.maxLength" [attr.minlength]="field.name === 'senha' ? 15 : null" [attr.inputmode]="field.name === 'cep' || field.name === 'cpf' ? 'numeric' : null" (blur)="field.name === 'cep' ? consultarCep() : null">
                 }
                 @if (form.get(field.name)?.touched && form.get(field.name)?.invalid) {<small class="field-error">Confira este campo.</small>}
               </label>
@@ -181,9 +199,8 @@
           }
         </div>
         @if (cepAviso()) {<p class="inline-note" role="status">{{ cepAviso() }}</p>}
-        <footer class="dialog-actions"><button type="button" class="secondary-button" (click)="fecharModal()">Cancelar</button><button class="primary-button" type="submit" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : 'Salvar cadastro' }}</button></footer>
+        <footer class="dialog-actions"><button type="button" class="secondary-button" (click)="fecharModal()">Cancelar</button><button class="primary-button" type="button" (click)="salvar()" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : (section === 'pessoas' ? 'Salvar e confirmar cadastro' : 'Salvar cadastro') }}</button></footer>
       </form>
     </section>
   </div>
 }
-

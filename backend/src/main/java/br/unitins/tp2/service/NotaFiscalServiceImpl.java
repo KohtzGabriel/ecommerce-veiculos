@@ -29,6 +29,11 @@ public class NotaFiscalServiceImpl implements NotaFiscalService {
     @Inject VeiculoRepository veiculos;
 
     @Override
+    public java.util.List<NotaFiscal> listar() {
+        return notas.list("order by dataEmissao desc, id desc");
+    }
+
+    @Override
     @Transactional
     public NotaFiscal criar(NotaFiscalRequest request) {
         if (request.entrada() ? request.fornecedorId() == null || request.clienteId() != null

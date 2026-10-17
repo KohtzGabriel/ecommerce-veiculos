@@ -6,7 +6,7 @@ import { CepResponse } from './api.models';
 @Injectable({ providedIn: 'root' })
 export class CepApiService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:8081';
+  private readonly apiUrl = 'http://localhost:8080';
 
   buscar(cep: string): Observable<CepResponse> {
     const normalizedCep = cep.replace(/\D/g, '');

@@ -25,7 +25,7 @@ describe('CepApiService', () => {
       expect(endereco.cep).toBe('77001000');
     });
 
-    const request = http.expectOne('http://localhost:8081/ceps/77001000');
+    const request = http.expectOne('http://localhost:8080/ceps/77001000');
     expect(request.request.method).toBe('GET');
     request.flush({ cep: '77001000', logradouro: 'Rua A', bairro: 'Centro' });
   });

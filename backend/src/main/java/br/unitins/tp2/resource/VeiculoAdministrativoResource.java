@@ -3,6 +3,10 @@ package br.unitins.tp2.resource;
 import java.util.List;
 
 import br.unitins.tp2.dto.VeiculoResponse;
+import br.unitins.tp2.dto.VeiculoPrecoRequest;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Consumes;
 import br.unitins.tp2.exception.ValidationException;
 import br.unitins.tp2.model.StatusVeiculo;
 import br.unitins.tp2.model.Veiculo;
@@ -39,6 +43,17 @@ public class VeiculoAdministrativoResource {
     @Transactional
     public VeiculoResponse buscar(@PathParam("id") long id) {
         return response(veiculos.buscar(id));
+    }
+
+    @PUT
+    @Path("/{id}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Transactional
+    public VeiculoResponse atualizarPreco(@PathParam("id") long id, @Valid VeiculoPrecoRequest request) {
+        if (request == null) throw ValidationException.of("valorVenda", "Informe o preço de venda.");
+        Veiculo veiculo = veiculos.buscar(id);
+        veiculo.setValorVenda(request.valorVenda());
+        return response(veiculo);
     }
 
     private StatusVeiculo parseStatus(String status) {

@@ -2,6 +2,7 @@ package br.unitins.tp2.resource;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
 
 import java.util.UUID;
 
@@ -12,6 +13,25 @@ import io.quarkus.test.security.TestSecurity;
 
 @QuarkusTest
 class NotaFiscalVeiculoIntegrationTest {
+    @Test
+    @TestSecurity(user = "admin", roles = "ADMINISTRADOR")
+    void alteraSomentePrecoDeVenda() {
+        String sufixo = UUID.randomUUID().toString();
+        inserirEntrada(sufixo, criarFornecedor(sufixo), criarMarca(sufixo));
+        int id = given().queryParam("modelo", "Modelo-" + sufixo).get("/admin/veiculos")
+                .then().statusCode(200).extract().path("[0].id");
+        var antes = given().get("/admin/veiculos/{id}", id).then().extract().jsonPath().getMap("");
+        given().contentType("application/json").body("{\"valorVenda\":13500.50}")
+                .put("/admin/veiculos/{id}", id).then().statusCode(200);
+        var depois = given().get("/admin/veiculos/{id}", id).then().extract().jsonPath().getMap("");
+        org.junit.jupiter.api.Assertions.assertEquals(13500.5f, depois.remove("valorVenda"));
+        antes.remove("valorVenda");
+        org.junit.jupiter.api.Assertions.assertEquals(antes, depois);
+        for (String body : new String[]{"{}", "{\"valorVenda\":-1}", "{\"valorVenda\":1.234}"}) {
+            given().contentType("application/json").body(body).put("/admin/veiculos/{id}", id).then().statusCode(400);
+        }
+    }
+
     @Test
     @TestSecurity(user = "admin", roles = "ADMINISTRADOR")
     void entradaCadastraCarroSaidaVendeEExclusoesRevertemEstoque() {
@@ -30,6 +50,9 @@ class NotaFiscalVeiculoIntegrationTest {
                 """.formatted(sufixo, clienteId, veiculoId))
                 .post("/admin/notas-fiscais").then().statusCode(201).extract().path("id");
         given().get("/admin/veiculos/{id}", veiculoId).then().statusCode(200).body("status", equalTo("VENDIDO"));
+
+        given().get("/admin/notas-fiscais").then().statusCode(200)
+                .body("id", hasItems(notaEntrada, notaSaida));
 
         given().contentType("application/json").body("""
                 {"numero":"S2-%s","serie":"1","dataEmissao":"2026-01-15","entrada":false,

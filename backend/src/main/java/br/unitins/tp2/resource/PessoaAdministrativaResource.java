@@ -7,6 +7,9 @@ import br.unitins.tp2.exception.ValidationException;
 import br.unitins.tp2.mapper.EnderecoMapper;
 import br.unitins.tp2.model.*;
 import br.unitins.tp2.repository.PessoaRepository;
+import br.unitins.tp2.repository.UsuarioRepository;
+import br.unitins.tp2.service.ClienteService;
+import br.unitins.tp2.service.SenhaService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -21,11 +24,34 @@ import java.util.List;
 @RolesAllowed("ADMINISTRADOR")
 public class PessoaAdministrativaResource {
  @Inject PessoaRepository pessoas;
+ @Inject UsuarioRepository usuarios;
+ @Inject ClienteService clientes;
+ @Inject SenhaService senhas;
 
  @GET @Transactional public List<PessoaAdministrativaResponse> all(){return pessoas.findAll().list().stream().map(this::response).toList();}
  @GET @Path("/{id}") @Transactional public PessoaAdministrativaResponse get(@PathParam("id") long id){return response(find(id));}
  @POST @Transactional public Response create(@Valid PessoaAdministrativaRequest dto, @Context UriInfo uri){
-   Pessoa p=novo(dto); apply(p,dto); pessoas.persistAndFlush(p);
+   Pessoa p=novo(dto); apply(p,dto);
+   if (dto.cadastrarFornecedor() && !(p instanceof PessoaJuridica)) throw ValidationException.of("cadastrarFornecedor", "Fornecedor deve ser uma pessoa jurídica.");
+   if (dto.usuario() != null && !(p instanceof PessoaFisica)) throw ValidationException.of("usuario", "Usuário deve ser uma pessoa física.");
+   if (dto.usuario() != null && Perfil.valueOf(dto.usuario().perfilId()) == null) throw ValidationException.of("usuario.perfilId", "Perfil de acesso inválido.");
+   if (pessoas.findByEmailExceptId(dto.email(), null) != null) throw ValidationException.of("email", "Já existe uma pessoa cadastrada com esse e-mail.");
+   if (dto.usuario() != null && usuarios.findByLogin(dto.email()) != null) throw ValidationException.of("email", "Já existe um usuário com esse login.");
+   pessoas.persistAndFlush(p);
+   if (dto.cadastrarCliente()) clientes.createAssociado(p.getId(), true);
+   if (dto.cadastrarFornecedor()) {
+     Fornecedor fornecedor = new Fornecedor();
+     fornecedor.setPessoaJuridica((PessoaJuridica) p);
+     pessoas.getEntityManager().persist(fornecedor);
+   }
+   if (dto.usuario() != null) {
+     Usuario usuario = new Usuario();
+     usuario.setPessoa(p); usuario.setLogin(p.getEmail());
+     usuario.setSenha(senhas.gerarHash(p.getEmail(), dto.usuario().senha()));
+     usuario.setPerfis(java.util.Set.of(Perfil.valueOf(dto.usuario().perfilId())));
+     usuarios.persist(usuario);
+   }
+   pessoas.getEntityManager().flush();
    return Response.created(uri.getAbsolutePathBuilder().path(p.getId().toString()).build()).entity(response(p)).build();
  }
  @PUT @Path("/{id}") @Transactional public PessoaAdministrativaResponse update(@PathParam("id") long id,@Valid PessoaAdministrativaRequest dto){

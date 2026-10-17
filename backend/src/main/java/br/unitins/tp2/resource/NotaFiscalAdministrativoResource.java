@@ -27,6 +27,12 @@ import jakarta.ws.rs.core.UriInfo;
 public class NotaFiscalAdministrativoResource {
     @Inject NotaFiscalService notas;
 
+    @GET
+    @Transactional
+    public java.util.List<NotaFiscalResponse> listar() {
+        return notas.listar().stream().map(this::response).toList();
+    }
+
     @POST
     @Transactional
     public Response criar(@Valid NotaFiscalRequest request, @Context UriInfo uri) {

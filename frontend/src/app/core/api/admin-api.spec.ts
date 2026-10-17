@@ -19,7 +19,7 @@ describe('AdminApi', () => {
   it('consulta recurso administrativo com filtros sem perder os parâmetros', () => {
     service.get<{ id: number }[]>('/admin/veiculos', { modelo: 'Giulia', status: 'DISPONIVEL' })
       .subscribe((items) => expect(items[0].id).toBe(4));
-    const req = http.expectOne((request) => request.url === 'http://localhost:8081/admin/veiculos');
+    const req = http.expectOne((request) => request.url === 'http://localhost:8080/admin/veiculos');
     expect(req.request.method).toBe('GET');
     expect(req.request.params.get('modelo')).toBe('Giulia');
     expect(req.request.params.get('status')).toBe('DISPONIVEL');

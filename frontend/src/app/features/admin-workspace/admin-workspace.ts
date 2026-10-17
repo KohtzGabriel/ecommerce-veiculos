@@ -8,6 +8,7 @@ import { CepApiService } from '../../core/api/cep-api.service';
 
 type Section = 'pessoas' | 'clientes' | 'usuarios' | 'fornecedores' | 'marcas' | 'veiculos' | 'notas-fiscais' | 'enderecos';
 type Row = Record<string, any> & {
+  cadastrarCliente?: boolean; cadastrarUsuario?: boolean; cadastrarFornecedor?: boolean;
   id?: number; ativo?: boolean; bairro?: string; chassi?: string; cidade?: string; cnpj?: string | null; complemento?: string;
   cor?: string; cpf?: string | null; cep?: string; dataEmissao?: string; dataNascimento?: string | null; descricao?: string;
   email?: string; endereco?: any; entrada?: boolean; genero?: string; logradouro?: string; marcaId?: number;
@@ -26,7 +27,7 @@ const MODULES: Record<Section, { title: string; description: string; endpoint: s
   pessoas: {
     title: 'Pessoas', description: 'Cadastros de pessoas físicas e jurídicas da loja.', endpoint: 'admin/pessoas',
     columns: [{ key: 'nome', label: 'Nome / razão social' }, { key: 'tipoPessoa', label: 'Tipo' }, { key: 'cpf', label: 'CPF' }, { key: 'cnpj', label: 'CNPJ' }, { key: 'email', label: 'E-mail' }],
-    fields: [{ name: 'tipoPessoa', label: 'Tipo de pessoa', type: 'select', required: true, options: [{ id: 'FISICA', nome: 'Pessoa física' }, { id: 'JURIDICA', nome: 'Pessoa jurídica' }] }, text('nome', 'Nome', true, 120), text('email', 'E-mail', true, 120), text('genero', 'Gênero'), text('cpf', 'CPF'), { name: 'dataNascimento', label: 'Data de nascimento', type: 'date' }, text('cnpj', 'CNPJ'), text('razaoSocial', 'Razão social'), text('nomeFantasia', 'Nome fantasia'), text('cep', 'CEP'), text('logradouro', 'Logradouro'), text('numero', 'Número'), text('complemento', 'Complemento'), text('bairro', 'Bairro'), text('cidade', 'Cidade', false, 80), text('estado', 'UF', false, 2)],
+    fields: [{ name: 'tipoPessoa', label: 'Tipo de pessoa', type: 'select', required: true, options: [{ id: 'FISICA', nome: 'Pessoa física' }, { id: 'JURIDICA', nome: 'Pessoa jurídica' }] }, text('nome', 'Nome', true, 120), text('email', 'E-mail', true, 120), text('genero', 'Gênero'), text('cpf', 'CPF'), { name: 'dataNascimento', label: 'Data de nascimento', type: 'date' }, text('cnpj', 'CNPJ'), text('razaoSocial', 'Razão social'), text('nomeFantasia', 'Nome fantasia'), text('cep', 'CEP'), text('logradouro', 'Logradouro'), text('numero', 'Número'), text('complemento', 'Complemento'), text('bairro', 'Bairro'), text('cidade', 'Cidade', false, 80), text('estado', 'UF', false, 2), { name: 'cadastrarCliente', label: 'Cadastrar como cliente', type: 'checkbox' }, { name: 'cadastrarUsuario', label: 'Criar acesso de usuário', type: 'checkbox' }, { name: 'cadastrarFornecedor', label: 'Cadastrar como fornecedor', type: 'checkbox' }, { name: 'senha', label: 'Senha inicial (mínimo 15 caracteres)', type: 'password', minLength: 15, maxLength: 128 }, { name: 'perfilId', label: 'Perfil de acesso', type: 'select', options: [{ id: 2, nome: 'Cliente' }, { id: 1, nome: 'Administrador' }] }],
   },
   clientes: { title: 'Clientes', description: 'Localize clientes pelo CPF ou associe uma pessoa já cadastrada.', endpoint: 'admin/clientes', columns: [], fields: [] },
   usuarios: {
@@ -40,7 +41,7 @@ const MODULES: Record<Section, { title: string; description: string; endpoint: s
     fields: [{ name: 'pessoaJuridicaId', label: 'Pessoa jurídica', type: 'select', required: true, options: [] }, { name: 'ativo', label: 'Ativo', type: 'checkbox' }],
   },
   marcas: { title: 'Marcas', description: 'Marcas disponíveis para os veículos do estoque.', endpoint: 'admin/marcas', columns: [{ key: 'nome', label: 'Marca' }], fields: [text('nome', 'Nome da marca', true, 80)] },
-  veiculos: { title: 'Veículos', description: 'Consulte o estoque. O cadastro de um veículo acontece na entrada de nota fiscal.', endpoint: 'admin/veiculos', columns: [{ key: 'modelo', label: 'Modelo' }, { key: 'marcaNome', label: 'Marca' }, { key: 'anoModelo', label: 'Ano' }, { key: 'status', label: 'Status' }, { key: 'valorVenda', label: 'Preço' }], fields: [] },
+  veiculos: { title: 'Veículos', description: 'Consulte o estoque. O cadastro de um veículo acontece na entrada de nota fiscal.', endpoint: 'admin/veiculos', columns: [{ key: 'modelo', label: 'Modelo' }, { key: 'marcaNome', label: 'Marca' }, { key: 'anoModelo', label: 'Ano' }, { key: 'status', label: 'Status' }, { key: 'valorVenda', label: 'Preço' }], fields: [{ name: 'valorVenda', label: 'Preço de venda (R$)', type: 'number', required: true }] },
   'notas-fiscais': { title: 'Notas fiscais', description: 'Emita notas de entrada ou saída e consulte notas pelo identificador.', endpoint: 'admin/notas-fiscais', columns: [], fields: [] },
   enderecos: {
     title: 'Endereços', description: 'Mantenha os endereços e consulte o CEP quando o serviço estiver disponível.', endpoint: 'admin/enderecos',
@@ -75,12 +76,22 @@ export class AdminWorkspace implements OnInit {
   readonly filtroMarca = signal('');
   readonly filtroStatus = signal('');
   readonly pessoaJuridica = signal<{ id: number; nome: string }[]>([]);
-  readonly pessoasDisponiveis = signal<{ id: number; nome: string; tipoPessoa: string }[]>([]);
+  readonly pessoasDisponiveis = signal<{ id: number; nome: string; tipoPessoa: string; cpf?: string }[]>([]);
+  readonly usuariosParaCliente = signal<{ nome: string; login: string; cpf: string }[]>([]);
+  readonly opcoesUsuariosCliente = computed(() => this.usuariosParaCliente().flatMap((usuario) => {
+    const pessoa = this.pessoasDisponiveis().find((item) => item.tipoPessoa === 'FISICA' && item.cpf === usuario.cpf);
+    return pessoa ? [{ pessoaId: pessoa.id, nome: usuario.nome, login: usuario.login }] : [];
+  }));
   readonly marcas = signal<{ id: number; nome: string }[]>([]);
+  readonly fornecedoresNota = signal<{ id: number; razaoSocial: string; cnpj: string; ativo: boolean }[]>([]);
+  readonly carregandoFornecedores = signal(false);
+  readonly erroFornecedores = signal('');
   readonly resultadoCliente = signal<Row | null>(null);
   readonly pessoaIdCliente = signal('');
   readonly numeroNotaConsulta = signal('');
-  readonly notaEncontrada = signal<Row | null>(null);
+  readonly notasEncontradas = signal<Row[]>([]);
+  readonly consultandoNotas = signal(false);
+  readonly consultaNotasRealizada = signal(false);
   readonly detalheVeiculo = signal<Row | null>(null);
   readonly cepAviso = signal('');
   readonly editingId = signal<number | null>(null);
@@ -106,7 +117,7 @@ export class AdminWorkspace implements OnInit {
   ngOnInit(): void {
     if (this.section === 'clientes') { void this.carregarPessoas(); return; }
     if (this.section === 'notas-fiscais') { void this.carregarOpcoes(); return; }
-    if (this.section === 'veiculos') { this.carregarVeiculos(); void this.carregarOpcoes(); return; }
+    if (this.section === 'veiculos') { this.criarControles(); this.carregarVeiculos(); void this.carregarOpcoes(); return; }
     this.criarControles();
     this.carregarLista();
     if (this.section === 'fornecedores' || this.section === 'pessoas') void this.carregarOpcoes();
@@ -130,6 +141,10 @@ export class AdminWorkspace implements OnInit {
     }
     if (this.section === 'pessoas') {
       const tipo = this.form.get('tipoPessoa')?.value;
+      if (name === 'cadastrarCliente') return !this.editingId();
+      if (name === 'cadastrarUsuario') return !this.editingId() && tipo === 'FISICA';
+      if (name === 'cadastrarFornecedor') return !this.editingId() && tipo === 'JURIDICA';
+      if (['senha', 'perfilId'].includes(name)) return !this.editingId() && tipo === 'FISICA' && Boolean(this.form.get('cadastrarUsuario')?.value);
       if (name === 'cpf' || name === 'dataNascimento') return tipo === 'FISICA';
       if (['cnpj', 'razaoSocial', 'nomeFantasia'].includes(name)) return tipo === 'JURIDICA';
       return true;
@@ -137,17 +152,59 @@ export class AdminWorkspace implements OnInit {
     return true;
   }
 
+  fieldRequired(field: Field): boolean {
+    if (this.section === 'pessoas') {
+      const tipo = this.form.get('tipoPessoa')?.value;
+      if (['cpf', 'dataNascimento'].includes(field.name)) return tipo === 'FISICA';
+      if (['cnpj', 'razaoSocial'].includes(field.name)) return tipo === 'JURIDICA';
+      if (['senha', 'perfilId'].includes(field.name)) return this.fieldVisible(field.name);
+    }
+    return field.required ?? false;
+  }
+
+  atualizarVinculosPessoa(): void {
+    if (this.section !== 'pessoas') return;
+    const fisica = this.form.get('tipoPessoa')?.value === 'FISICA';
+    for (const name of ['cpf', 'dataNascimento', 'cnpj', 'razaoSocial', 'nomeFantasia']) {
+      const control = this.form.get(name);
+      if (['cpf', 'dataNascimento'].includes(name) === fisica) control?.enable();
+      else control?.disable();
+    }
+    if (fisica) this.form.get('cadastrarFornecedor')?.setValue(false);
+    else this.form.get('cadastrarUsuario')?.setValue(false);
+    const criarUsuario = fisica && Boolean(this.form.get('cadastrarUsuario')?.value) && !this.editingId();
+    for (const name of ['senha', 'perfilId']) {
+      const control = this.form.get(name);
+      if (criarUsuario) control?.enable();
+      else { control?.disable(); if (name === 'senha') control?.reset(''); }
+    }
+  }
+
   private carregarPessoas(): void {
     this.carregando.set(true); this.erro.set('');
     this.api.get<any[]>('admin/pessoas').subscribe({
       next: (pessoas) => {
-        this.pessoasDisponiveis.set(pessoas.map((p) => ({ id: p.id, nome: p.nome || p.razaoSocial, tipoPessoa: p.tipoPessoa })));
+        this.pessoasDisponiveis.set(pessoas.map((p) => ({ id: p.id, nome: p.nome || p.razaoSocial, tipoPessoa: p.tipoPessoa, cpf: p.cpf })));
+        this.carregarUsuariosParaCliente();
         this.carregando.set(false);
       }, error: (e) => { this.carregando.set(false); this.erro.set(this.mensagemErro(e, 'Não foi possível carregar pessoas para associação.')); },
     });
   }
 
+  private carregarUsuariosParaCliente(page = 0): void {
+    type UsuarioOpcao = { nome: string; login: string; cpf: string };
+    this.api.get<{ items: UsuarioOpcao[]; totalPages: number } | UsuarioOpcao[]>('usuarios', { page, pageSize: 100 }).subscribe({
+      next: (response) => {
+        const usuarios = Array.isArray(response) ? response : response.items;
+        this.usuariosParaCliente.update((atuais) => [...(page === 0 ? [] : atuais), ...usuarios.filter((usuario) => usuario.cpf && usuario.login)]);
+        if (!Array.isArray(response) && page + 1 < response.totalPages) this.carregarUsuariosParaCliente(page + 1);
+      },
+      error: (error: unknown) => this.erro.set(this.mensagemErro(error, 'Não foi possível carregar os usuários para vincular ao cliente.')),
+    });
+  }
+
   carregarLista(): void {
+    if (this.section === 'veiculos') { this.carregarVeiculos(); return; }
     this.carregando.set(true); this.erro.set('');
     const query = this.section === 'usuarios' ? { page: 0, pageSize: 100 } : {};
     this.api.get<any>(this.config.endpoint, query).subscribe({
@@ -172,12 +229,21 @@ export class AdminWorkspace implements OnInit {
         pending++;
         this.api.get<any[]>('admin/marcas').subscribe({ next: (list) => { this.marcas.set(list); done(); }, error: () => done() });
       }
+      if (this.section === 'notas-fiscais') {
+        pending++;
+        this.carregandoFornecedores.set(true);
+        this.api.get<{ id: number; razaoSocial: string; cnpj: string; ativo: boolean }[]>('admin/fornecedores').subscribe({
+          next: (list) => { this.fornecedoresNota.set(list); this.carregandoFornecedores.set(false); done(); },
+          error: (error: unknown) => { this.carregandoFornecedores.set(false); this.erroFornecedores.set(this.mensagemErro(error, 'Não foi possível carregar os fornecedores. Atualize a página para tentar novamente.')); done(); },
+        });
+      }
       if (pending === 0) resolve();
     });
   }
 
   abrirNovo(): void {
     this.editingId.set(null); this.form.enable(); this.form.reset();
+    if (this.section === 'pessoas') this.form.get('tipoPessoa')?.setValue('FISICA');
     this.config.fields.forEach((field) => {
       const validators = field.required ? [Validators.required] : [];
       if (field.type !== 'select' && field.type !== 'checkbox' && field.name.toLowerCase().includes('email')) validators.push(Validators.email);
@@ -185,10 +251,15 @@ export class AdminWorkspace implements OnInit {
       this.form.get(field.name)?.setValidators(validators); this.form.get(field.name)?.updateValueAndValidity({ emitEvent: false });
     });
     if (this.section === 'fornecedores') this.form.get('ativo')?.setValue(true);
+    if (this.section === 'pessoas') {
+      this.form.patchValue({ cadastrarCliente: false, cadastrarUsuario: false, cadastrarFornecedor: false, perfilId: 2 });
+      this.atualizarVinculosPessoa();
+    }
     this.modalAberto.set(true); this.erro.set(''); this.sucesso.set('');
   }
 
   editar(row: Row): void {
+    this.form.enable();
     this.editingId.set(row.id ?? null);
     const values: Row = { ...row };
     if (this.section === 'enderecos') { values.cidade = row.cidade; values.estado = row.estado; }
@@ -208,7 +279,7 @@ export class AdminWorkspace implements OnInit {
       }
     }
     if (this.section === 'pessoas') this.form.get('tipoPessoa')?.disable();
-    this.form.reset(values); this.modalAberto.set(true); this.erro.set('');
+    this.form.reset(values); this.atualizarVinculosPessoa(); this.modalAberto.set(true); this.erro.set('');
   }
 
   salvar(): void {
@@ -220,6 +291,7 @@ export class AdminWorkspace implements OnInit {
       if (values.tipoPessoa === 'JURIDICA' && (!values.cnpj || !values.razaoSocial)) { this.erro.set('CNPJ e razão social são obrigatórios para pessoa jurídica.'); return; }
       if (values.cep && (!values.logradouro || !values.numero || !values.bairro || !values.cidade || !values.estado)) { this.erro.set('Complete os dados do endereço ou remova o CEP para salvar sem endereço.'); return; }
     }
+    if (this.section === 'veiculos' && (values.valorVenda == null || !Number.isFinite(Number(values.valorVenda)) || Number(values.valorVenda) < 0 || !/^\d+(\.\d{1,2})?$/.test(String(values.valorVenda)))) { this.erro.set('Informe um preço válido, com até duas casas decimais.'); return; }
     const body = this.payload(); this.salvando.set(true); this.erro.set('');
     const id = this.editingId();
     const request = id ? this.api.put(`${this.config.endpoint}/${id}`, body) : this.api.post(this.config.endpoint, body);
@@ -230,9 +302,15 @@ export class AdminWorkspace implements OnInit {
 
   private payload(): Row {
     const v = this.form.getRawValue() as Row;
+    if (this.section === 'veiculos') return { valorVenda: Number(v.valorVenda) };
     if (this.section === 'pessoas') {
       const endereco = v.cep ? { cep: v.cep, logradouro: v.logradouro, numero: v.numero, complemento: v.complemento || '', bairro: v.bairro, cidade: v.cidade, estado: v.estado } : null;
-      return { tipoPessoa: v.tipoPessoa, nome: v.nome, email: v.email, genero: v.genero || '', cpf: v.tipoPessoa === 'FISICA' ? v.cpf : null, dataNascimento: v.tipoPessoa === 'FISICA' ? v.dataNascimento : null, cnpj: v.tipoPessoa === 'JURIDICA' ? v.cnpj : null, razaoSocial: v.tipoPessoa === 'JURIDICA' ? v.razaoSocial : null, nomeFantasia: v.nomeFantasia || '', endereco };
+      const vinculos = this.editingId() ? {} : {
+        cadastrarCliente: Boolean(v.cadastrarCliente),
+        cadastrarFornecedor: v.tipoPessoa === 'JURIDICA' && Boolean(v.cadastrarFornecedor),
+        usuario: v.tipoPessoa === 'FISICA' && v.cadastrarUsuario ? { senha: v.senha, perfilId: Number(v.perfilId) } : null,
+      };
+      return { tipoPessoa: v.tipoPessoa, nome: v.nome, email: v.email, genero: v.genero || '', cpf: v.tipoPessoa === 'FISICA' ? v.cpf : null, dataNascimento: v.tipoPessoa === 'FISICA' ? v.dataNascimento : null, cnpj: v.tipoPessoa === 'JURIDICA' ? v.cnpj : null, razaoSocial: v.tipoPessoa === 'JURIDICA' ? v.razaoSocial : null, nomeFantasia: v.nomeFantasia || '', endereco, ...vinculos };
     }
     if (this.section === 'fornecedores') return { pessoaJuridicaId: Number(v.pessoaJuridicaId), ativo: Boolean(v.ativo) };
     if (this.section === 'enderecos') return { cep: v.cep, logradouro: v.logradouro, numero: v.numero, complemento: v.complemento || '', bairro: v.bairro, cidade: v.cidade, estado: v.estado };
@@ -256,9 +334,11 @@ export class AdminWorkspace implements OnInit {
   }
 
   criarCliente(): void {
+    if (this.salvando()) return;
     const pessoaId = Number(this.pessoaIdCliente());
     if (!pessoaId) { this.erro.set('Selecione uma pessoa para associar como cliente.'); return; }
-    this.api.post('admin/clientes', { pessoaId, ativo: true }).subscribe({ next: (row: any) => { this.resultadoCliente.set(row); this.sucesso.set('Cliente associado com sucesso.'); this.erro.set(''); }, error: (e) => this.erro.set(this.mensagemErro(e, 'Não foi possível associar o cliente.')) });
+    this.salvando.set(true); this.erro.set('');
+    this.api.post<Row>('admin/clientes', { pessoaId, ativo: true }).subscribe({ next: (row) => { this.salvando.set(false); this.resultadoCliente.set(row); this.sucesso.set('Cliente salvo com sucesso.'); }, error: (e) => { this.salvando.set(false); this.erro.set(this.mensagemErro(e, 'Não foi possível salvar o cliente.')); } });
   }
 
   excluirCliente(): void {
@@ -274,13 +354,24 @@ export class AdminWorkspace implements OnInit {
 
   mostrarVeiculo(row: Row): void { this.api.get<Row>(`admin/veiculos/${row.id}`).subscribe({ next: (v) => this.detalheVeiculo.set(v), error: (e) => this.erro.set(this.mensagemErro(e, 'Não foi possível carregar o veículo.')) }); }
 
-  setTipoNota(entrada: boolean): void { this.isEntrada.set(entrada); this.notaForm.patchValue({ entrada, produtoId: '', valorUnitario: '' }); }
+  setTipoNota(entrada: boolean): void {
+    this.isEntrada.set(entrada);
+    this.notaForm.patchValue({ entrada, produtoId: '', valorUnitario: '' });
+    const camposEntrada = ['fornecedorId', 'descricao', 'valorCusto', 'valorVenda', 'modelo', 'marcaId', 'anoFabricacao', 'anoModelo', 'cor', 'placa', 'chassi', 'renavam', 'quilometragem'];
+    const camposSaida = ['clienteId', 'produtoId'];
+    for (const name of [...camposEntrada, ...camposSaida]) {
+      const control = this.notaForm.get(name);
+      if (camposEntrada.includes(name) === entrada) control?.enable();
+      else control?.disable();
+    }
+  }
 
   salvarNota(): void {
+    if (this.salvando()) return;
     this.notaForm.markAllAsTouched();
     const v = this.notaForm.getRawValue();
     if (this.notaForm.invalid) return;
-    if (v.entrada && !v.fornecedorId) { this.erro.set('Informe o ID do fornecedor da nota de entrada.'); return; }
+    if (v.entrada && !v.fornecedorId) { this.erro.set('Selecione o fornecedor da nota de entrada.'); return; }
     if (!v.entrada && (!v.clienteId || !v.produtoId)) { this.erro.set('Informe o ID do cliente e do veículo a vender.'); return; }
     if (v.entrada && (!v.descricao || !v.modelo || !v.marcaId || !v.anoFabricacao || !v.anoModelo || !v.cor || !v.chassi || v.valorCusto === '' || v.valorVenda === '')) { this.erro.set('Preencha os dados obrigatórios do veículo e da entrada.'); return; }
     const item: Row = { quantidade: Number(v.quantidade), valorUnitario: Number(v.valorUnitario) };
@@ -290,17 +381,24 @@ export class AdminWorkspace implements OnInit {
     } else item.produtoId = Number(v.produtoId);
     const body = { numero: v.numero, serie: v.serie, dataEmissao: v.dataEmissao, entrada: v.entrada, clienteId: v.clienteId ? Number(v.clienteId) : null, fornecedorId: v.fornecedorId ? Number(v.fornecedorId) : null, itens: [item] };
     this.salvando.set(true); this.erro.set('');
-    this.api.post<Row>('admin/notas-fiscais', body).subscribe({ next: (nf) => { this.salvando.set(false); this.sucesso.set(`Nota ${nf.numero} criada. ${nf.entrada ? 'Veículo registrado no estoque.' : 'Veículo marcado como vendido.'}`); this.notaEncontrada.set(nf); }, error: (e) => { this.salvando.set(false); this.erro.set(this.mensagemErro(e, 'Não foi possível emitir a nota fiscal.')); } });
+    this.api.post<Row>('admin/notas-fiscais', body).subscribe({ next: (nf) => { this.salvando.set(false); this.sucesso.set(`Nota ${nf.numero} criada. ${nf.entrada ? 'Veículo registrado no estoque.' : 'Veículo marcado como vendido.'}`); this.notasEncontradas.set([nf]); }, error: (e) => { this.salvando.set(false); this.erro.set(this.mensagemErro(e, 'Não foi possível emitir a nota fiscal.')); } });
   }
 
   buscarNota(): void {
-    const id = Number(this.numeroNotaConsulta()); if (!id) return;
-    this.api.get<Row>(`admin/notas-fiscais/${id}`).subscribe({ next: (nf) => { this.notaEncontrada.set(nf); this.erro.set(''); }, error: (e) => { this.notaEncontrada.set(null); this.erro.set(this.mensagemErro(e, 'Nota fiscal não encontrada.')); } });
+    if (this.consultandoNotas()) return;
+    const filtro = this.numeroNotaConsulta().trim();
+    const id = Number(filtro);
+    if (filtro && (!Number.isSafeInteger(id) || id < 1)) { this.erro.set('Informe um ID válido ou deixe em branco para listar todas as notas.'); return; }
+    this.consultandoNotas.set(true); this.consultaNotasRealizada.set(false); this.erro.set(''); this.notasEncontradas.set([]);
+    this.api.get<Row | Row[]>(filtro ? `admin/notas-fiscais/${id}` : 'admin/notas-fiscais').subscribe({
+      next: (data) => { this.notasEncontradas.set(Array.isArray(data) ? data : [data]); this.consultandoNotas.set(false); this.consultaNotasRealizada.set(true); },
+      error: (e) => { this.consultandoNotas.set(false); this.erro.set(this.mensagemErro(e, 'Não foi possível consultar as notas fiscais.')); },
+    });
   }
 
-  excluirNota(): void {
-    const id = this.notaEncontrada()?.['id']; if (!id || !globalThis.confirm('Excluir esta nota fiscal? A exclusão pode alterar o estoque do veículo.')) return;
-    this.api.delete(`admin/notas-fiscais/${id}`).subscribe({ next: () => { this.notaEncontrada.set(null); this.sucesso.set('Nota excluída; o estoque foi atualizado conforme o tipo da nota.'); }, error: (e) => this.erro.set(this.mensagemErro(e, 'Não foi possível excluir. O veículo pode ter movimentação posterior.')) });
+  excluirNota(nota: Row): void {
+    const id = nota.id; if (!id || !globalThis.confirm('Excluir esta nota fiscal? A exclusão pode alterar o estoque do veículo.')) return;
+    this.api.delete(`admin/notas-fiscais/${id}`).subscribe({ next: () => { this.notasEncontradas.update((notas) => notas.filter((item) => item.id !== id)); this.sucesso.set('Nota excluída; o estoque foi atualizado conforme o tipo da nota.'); }, error: (e) => this.erro.set(this.mensagemErro(e, 'Não foi possível excluir. O veículo pode ter movimentação posterior.')) });
   }
 
   consultarCep(): void {

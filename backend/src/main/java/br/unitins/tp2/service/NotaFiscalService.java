@@ -4,6 +4,7 @@ import br.unitins.tp2.dto.NotaFiscalRequest;
 import br.unitins.tp2.model.NotaFiscal;
 
 public interface NotaFiscalService {
+    java.util.List<NotaFiscal> listar();
     NotaFiscal criar(NotaFiscalRequest request);
     NotaFiscal buscar(long id);
     void excluir(long id);
