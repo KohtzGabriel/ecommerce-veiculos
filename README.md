@@ -16,6 +16,18 @@ cd backend
 
 O backend fica em `http://localhost:8080`.
 
+### Perfil de demonstração
+
+Para uma apresentação, o perfil `demo` usa por padrão o banco local `ecommerce_veiculos_demo`, cria/atualiza o esquema nesse banco e insere os dados de exemplo na primeira inicialização. O banco precisa existir no PostgreSQL; use `DEMO_DB_URL`, `DEMO_DB_USERNAME` e `DEMO_DB_PASSWORD` para personalizar a conexão.
+
+```powershell
+createdb -U postgres ecommerce_veiculos_demo
+cd backend
+./mvnw.cmd -Dquarkus.profile=demo quarkus:dev
+```
+
+Contas de apresentação: administrador `admin@demo.veiculos.local` / `DemoAdmin@2026`; cliente `cliente@demo.veiculos.local` / `DemoCliente@2026`. O seed inclui fornecedor, cliente, três marcas, três veículos disponíveis e um adicional. O processo é idempotente: reiniciar a API não repete os cadastros. Use apenas com o banco dedicado de demonstração; em outros perfis, a carga fica desativada.
+
 Endpoints principais:
 
 - `POST /auth/login` autentica e retorna JWT.
@@ -32,7 +44,7 @@ npm start
 
 O Angular fica em `http://localhost:4200`.
 
-Se a ViaCEP estiver indisponível, a tela mantém logradouro, número, bairro, cidade e UF editáveis para o preenchimento manual. Cidades/UF são associadas internamente ao endereço; não há endpoints de manutenção geográfica.
+Se a ViaCEP estiver indisponível, a tela mantém logradouro, número, bairro, cidade e UF editáveis para o preenchimento manual. Cidade e UF são persistidas diretamente no endereço.
 
 ## Verificação
 
