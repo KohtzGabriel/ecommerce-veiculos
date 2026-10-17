@@ -1,0 +1,19 @@
+:host { display:block; min-height:100vh; color:#172421; }
+.admin-app { --forest:#0f3d3a; --forest-deep:#092b29; --racing-red:#c61f2a; --paper:#f8f9f7; --line:#e4e8e4; min-height:100vh; background:var(--paper); }
+.sidebar { position:fixed; inset:0 auto 0 0; z-index:10; display:flex; width:252px; flex-direction:column; padding:28px 16px 18px; color:#f6f7f4; background:linear-gradient(165deg,#1b2221,#101615 72%); }
+.brand { display:grid; justify-items:center; gap:4px; padding:0 8px 29px; color:#fff; text-decoration:none; }
+.brand-car { display:block; width:55px; height:30px; color:#f4f4ee; }.brand-car svg { width:100%; height:100%; }
+.brand-name { font:600 1.15rem/1 Georgia,serif; letter-spacing:.32em; padding-left:.32em; }
+.flag { width:54px; height:3px; margin-top:7px; background:linear-gradient(90deg,#009246 0 33.3%,#fff 33.3% 66.6%,#ce2b37 66.6%); }
+.nav-list { display:grid; gap:5px; }
+.nav-list a { display:flex; min-height:45px; align-items:center; gap:14px; padding:0 13px; border-radius:7px; color:#c6cdca; font-size:.91rem; text-decoration:none; transition:background .18s ease,color .18s ease; }
+.nav-list a:hover { color:#fff; background:#ffffff10; }.nav-list a.active { color:#fff; background:var(--forest); box-shadow:inset 3px 0 #e7eee8; }
+.nav-icon { display:grid; width:20px; place-items:center; color:#dfe7e1; font-size:1.05rem; }
+.sidebar-bottom { display:flex; align-items:center; gap:9px; margin-top:auto; padding:16px 8px 0; border-top:1px solid #ffffff18; color:#a9b1ad; font-size:.72rem; }.online-dot { width:7px; height:7px; border-radius:50%; background:#61bd84; box-shadow:0 0 0 4px #61bd8420; }
+.main-column { min-height:100vh; margin-left:252px; }.topbar { position:sticky; top:0; z-index:5; display:flex; height:66px; align-items:center; justify-content:space-between; padding:0 clamp(20px,3vw,46px); border-bottom:1px solid var(--line); background:#ffffffef; backdrop-filter:blur(12px); }
+.crumb { display:flex; align-items:center; gap:11px; color:#7c8580; font-size:.77rem; letter-spacing:.05em; }.crumb span:first-child { color:var(--forest); font-weight:800; }.crumb-sep { color:#c8ceca; }
+.account { display:flex; align-items:center; gap:10px; color:#49534e; font-size:.83rem; }.avatar { display:grid; width:30px; height:30px; place-items:center; border-radius:50%; color:white; background:var(--forest); font:600 .82rem Georgia,serif; }.account button { margin-left:12px; padding:8px 10px; border:0; border-left:1px solid var(--line); color:#53605a; background:none; font:inherit; cursor:pointer; }.account button:hover { color:var(--racing-red); }
+.menu-toggle { display:none; border:0; color:var(--forest); background:none; font-size:1.25rem; }.page-content { width:min(100%,1500px); margin:0 auto; padding:clamp(24px,3.3vw,48px); }
+.scrim { display:none; }
+@media(max-width:900px) { .sidebar { width:232px; transform:translateX(-100%); transition:transform .22s ease; }.nav-open .sidebar { transform:translateX(0); }.nav-open .scrim { position:fixed; inset:0; z-index:9; display:block; border:0; background:#111a18a8; }.main-column { margin-left:0; }.menu-toggle { display:block; }.topbar { gap:12px; }.crumb { margin-right:auto; } }
+@media(max-width:520px) { .page-content { padding:24px 16px; }.topbar { height:58px; padding:0 14px; }.account > span:not(.avatar) { display:none; }.account button { margin-left:0; padding-right:0; }.crumb { font-size:.68rem; } }

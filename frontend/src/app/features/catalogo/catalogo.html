@@ -1,0 +1,58 @@
+<main class="storefront">
+  <header class="topbar">
+    <a class="brand" routerLink="/loja" aria-label="Motore — início do mostruário">
+      <svg class="brand-mark" viewBox="0 0 48 26" aria-hidden="true"><path d="M4 18h4l4-8h22l7 8h3v5h-4a4 4 0 0 0-8 0H17a4 4 0 0 0-8 0H4zM14 13l-2 4h23l-4-4z" fill="currentColor"/><circle cx="13" cy="23" r="2.5"/><circle cx="36" cy="23" r="2.5"/></svg>
+      <span>MOTORE</span><i aria-hidden="true"></i>
+    </a>
+    <nav aria-label="Principal"><a class="current" routerLink="/loja">Veículos</a></nav>
+    <div class="account">
+      <span aria-hidden="true">♙</span><span>Área do cliente</span>
+      @if (logado()) { <button class="login-link" type="button" (click)="sair()">Sair</button> }
+      @else { <a class="login-link" routerLink="/cliente/login">Entrar</a> }
+    </div>
+  </header>
+
+  <section class="hero" aria-labelledby="catalog-title">
+    <img class="hero-image" src="/assets/vehicles/coupe-illustrative.png" alt="" fetchpriority="high">
+    <div class="hero-shade"></div>
+    <div class="hero-copy">
+      <h1 id="catalog-title">Encontre seu<br>próximo carro.</h1>
+      <p>Uma seleção cuidadosa para acompanhar<br class="desktop-break"> seus próximos caminhos.</p>
+    </div>
+  </section>
+
+  <section class="catalog-body">
+    <form class="filter-panel" [formGroup]="filtros" (ngSubmit)="consultar()" aria-label="Filtrar veículos">
+      <label>Modelo<input formControlName="modelo" placeholder="Todos os modelos"></label>
+      <label>Ano-modelo<input type="number" min="1886" max="2200" formControlName="anoModelo" placeholder="Todos os anos"></label>
+      <label>Marca<select formControlName="marcaId"><option value="">Todas as marcas</option>@for (marca of marcas(); track marca.id) {<option [value]="marca.id">{{ marca.nome }}</option>}</select></label>
+      <button class="search-button" type="submit" [disabled]="carregando()"><span aria-hidden="true">⌕</span> Buscar</button>
+      @if (filtros.dirty) { <button class="clear-button" type="button" (click)="limparFiltros()">Limpar</button> }
+    </form>
+
+    <div class="section-heading"><div><h2>Modelos disponíveis</h2><p>Veículos disponíveis para conhecer na loja.</p></div><span class="count">{{ veiculos().length }} {{ veiculos().length === 1 ? 'veículo' : 'veículos' }}</span></div>
+
+    <section class="inventory" aria-label="Veículos disponíveis">
+      @if (carregando()) { <p class="feedback" role="status">Carregando veículos…</p> }
+      @else if (falha()) { <div class="feedback error" role="alert"><strong>Não foi possível carregar o mostruário.</strong><span>Tente novamente em instantes.</span><button class="secondary-button" type="button" (click)="consultar()">Tentar novamente</button></div> }
+      @else if (veiculos().length === 0) { <p class="feedback">Não há veículos disponíveis com esses filtros.</p> }
+      @else {
+        <div class="vehicle-grid">
+          @for (veiculo of veiculos(); track veiculo.id) {
+            <article class="vehicle-card">
+              <div class="vehicle-image"><img [src]="imagem(veiculo.id)" alt="Imagem ilustrativa de veículo" loading="lazy"><span class="photo-caption">Imagem ilustrativa</span></div>
+              <div class="vehicle-info">
+                <p class="vehicle-brand">{{ veiculo.marca }} <span>·</span> {{ veiculo.anoModelo }}</p>
+                <h3>{{ veiculo.modelo }}</h3>
+                <p class="details">{{ veiculo.descricao }} · {{ veiculo.cor }}</p>
+                <div class="card-bottom"><strong class="price">{{ veiculo.valorVenda | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong><span class="available"><i></i>{{ veiculo.status === 'DISPONIVEL' ? 'Disponível' : veiculo.status.toLocaleLowerCase('pt-BR') }}</span></div>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </section>
+  <footer><a class="brand footer-brand" routerLink="/loja"><span>MOTORE</span><i aria-hidden="true"></i></a><span>Mostruário informativo · Imagens ilustrativas</span></footer>
+</main>
+

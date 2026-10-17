@@ -1,0 +1,32 @@
+# Local archives and operating-system files
+*.rar
+*.zip
+Thumbs.db
+.DS_Store
+
+# Environment files and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+
+# Legacy seed data from the original template (contains personal-looking records)
+backend/src/main/resources/import.sql
+
+# IDE configuration and local tool state
+.idea/
+.vscode/
+**/.vscode/
+
+# Java / Maven
+**/target/
+**/.quarkus/
+
+# Angular / Node build and local caches
+**/node_modules/
+**/dist/
+**/.angular/cache/
+**/coverage/

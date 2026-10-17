@@ -1,0 +1,96 @@
+@startuml
+title Cadastro de Pessoas, Usuários e Dados Fiscais
+
+skinparam classAttributeIconSize 0
+hide empty members
+
+abstract class Pessoa {
+  - id: UUID
+  - nomeCompleto: String
+  - email: String
+  - telefone: String
+}
+
+class Cliente {
+  - ativo: Boolean
+}
+
+class ClientePessoaFisica {
+  - cpf: String
+  - dataNascimento: LocalDate
+}
+
+class ClientePessoaJuridica {
+  - razaoSocial: String
+  - nomeFantasia: String
+  - cnpj: String
+  - inscricaoEstadual: String
+  - inscricaoMunicipal: String
+}
+
+class Funcionario {
+  - matricula: String
+  - cargo: String
+  - dataNascimento: LocalDate
+  - salario: BigDecimal
+  - ativo: Boolean
+}
+
+class Fornecedor {
+  - razaoSocial: String
+  - nomeFantasia: String
+  - documento: String
+  - inscricaoEstadual: String
+  - inscricaoMunicipal: String
+}
+
+class Usuario {
+  - id: Long
+  - login: String
+  - senhaHash: String
+  - ativo: Boolean
+  - tipoUsuario: TipoUsuario
+  + autenticar(senha: String): Boolean
+}
+
+class Endereco {
+  - id: Long
+  - cep: String
+  - logradouro: String
+  - numero: String
+  - complemento: String
+  - bairro: String
+  - municipio: String
+  - uf: String
+}
+
+enum TipoUsuario {
+  CLIENTE
+  FUNCIONARIO_OPERADOR
+  FUNCIONARIO_GESTOR
+  FUNCIONARIO_ADMINISTRADOR
+}
+
+Pessoa <|-- Cliente
+Pessoa <|-- Funcionario
+Pessoa <|-- Fornecedor
+Cliente <|-- ClientePessoaFisica
+Cliente <|-- ClientePessoaJuridica
+
+Pessoa "1" *-- "1" Endereco : possui obrigatoriamente
+Cliente "0..1" -- "1" Usuario : pode utilizar
+Funcionario "0..1" -- "1" Usuario : pode utilizar
+
+note right of Usuario
+  CLIENTE: acesso somente como cliente.
+  Perfis FUNCIONARIO_* permitem níveis
+  diferentes de acesso para funcionários.
+end note
+
+note right of Pessoa
+  Endereco não é atributo de Pessoa.
+  A obrigatoriedade é representada pela
+  composição Pessoa "1" *-- "1" Endereco.
+end note
+
+@enduml

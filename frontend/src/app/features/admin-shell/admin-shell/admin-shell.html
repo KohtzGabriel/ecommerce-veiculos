@@ -1,0 +1,29 @@
+<p>admin-shell works!</p>
+<div class="admin-app" [class.nav-open]="menuAberto()">
+  <button class="scrim" type="button" aria-label="Fechar menu" (click)="menuAberto.set(false)"></button>
+  <aside class="sidebar" aria-label="Navegação administrativa">
+    <a class="brand" routerLink="/admin/home" (click)="menuAberto.set(false)">
+      <span class="brand-car" aria-hidden="true"><svg viewBox="0 0 48 26"><path d="M5 18h3l4-8h22l7 8h3v5h-4a4 4 0 0 0-8 0H17a4 4 0 0 0-8 0H5zM14 13l-2 4h23l-4-4z" fill="currentColor"/><circle cx="13" cy="23" r="2.5"/><circle cx="36" cy="23" r="2.5"/></svg></span>
+      <span class="brand-name">MOTORE</span>
+      <span class="flag" aria-label="Verde, branco e vermelho"></span>
+    </a>
+    <nav class="nav-list">
+      @for (link of links; track link.path) {
+        <a [routerLink]="link.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+          (click)="menuAberto.set(false)">
+          <span class="nav-icon" aria-hidden="true">{{ link.icon }}</span><span>{{ link.label }}</span>
+        </a>
+      }
+    </nav>
+    <div class="sidebar-bottom"><span class="online-dot"></span><span>Sessão administrativa</span></div>
+  </aside>
+
+  <section class="main-column">
+    <header class="topbar">
+      <button class="menu-toggle" type="button" aria-label="Abrir menu" (click)="menuAberto.set(true)">☰</button>
+      <div class="crumb"><span>MOTORE</span><span class="crumb-sep">/</span><span>Gestão da loja</span></div>
+      <div class="account"><span class="avatar">A</span><span>Administrador</span><button type="button" aria-label="Sair da área administrativa" (click)="sair()">Sair <span aria-hidden="true">↗</span></button></div>
+    </header>
+    <main class="page-content"><router-outlet /></main>
+  </section>
+</div>

@@ -1,0 +1,43 @@
+<main class="login-shell">
+  <section class="visual-panel" aria-label="Motore — veículos e gestão">
+    <img src="/assets/vehicles/suv-illustrative.png" alt="" fetchpriority="high">
+    <div class="visual-overlay"></div>
+    <a class="brand" routerLink="/loja" aria-label="Motore, ir ao mostruário"><span class="brand-name">MOTORE</span><i aria-hidden="true"></i></a>
+    <div class="visual-copy"><p>{{ isAdmin ? 'GESTÃO DA LOJA' : 'MOSTRUÁRIO MOTORE' }}</p><h2>Seu próximo<br>capítulo começa<br>aqui.</h2><span>Paixão por automóveis. Atenção a cada detalhe.</span></div>
+    <span class="visual-foot">DESDE A ESCOLHA, ATÉ A ESTRADA.</span>
+  </section>
+
+  <section class="form-panel" aria-labelledby="login-title">
+    <a class="mobile-brand" routerLink="/loja"><span>MOTORE</span><i aria-hidden="true"></i></a>
+    <div class="login-card">
+    <p class="eyebrow">{{ isAdmin ? 'ÁREA ADMINISTRATIVA' : 'ÁREA DO CLIENTE' }}</p>
+    <h1 id="login-title">{{ isAdmin ? 'Acesso da equipe' : 'Acesse sua conta de cliente' }}</h1>
+    <p class="intro">{{ isAdmin ? 'Entre para gerenciar os veículos e a operação da loja.' : 'Entre para acompanhar o mostruário de veículos.' }}</p>
+
+    <form [formGroup]="form" (ngSubmit)="entrar()" novalidate>
+      <label for="login">E-mail</label>
+      <input id="login" name="login" type="email" formControlName="login" autocomplete="username"
+        [attr.aria-invalid]="form.controls.login.invalid && form.controls.login.touched" />
+      @if (form.controls.login.touched && form.controls.login.hasError('required')) {
+        <small class="field-error">Informe seu e-mail.</small>
+      } @else if (form.controls.login.touched && form.controls.login.hasError('email')) {
+        <small class="field-error">Informe um e-mail válido.</small>
+      }
+
+      <label for="senha">Senha</label>
+      <input id="senha" name="senha" type="password" formControlName="senha" autocomplete="current-password"
+        [attr.aria-invalid]="form.controls.senha.invalid && form.controls.senha.touched" />
+      @if (form.controls.senha.touched && form.controls.senha.invalid) {
+        <small class="field-error">Informe sua senha.</small>
+      }
+
+      @if (erro()) { <p class="error-message" role="alert">{{ erro() }}</p> }
+      <button type="submit" [disabled]="enviando()">{{ enviando() ? 'Entrando…' : 'Entrar' }}</button>
+    </form>
+
+    @if (isAdmin) { <a class="switch-login" routerLink="/cliente/login">Acesso do cliente</a> }
+    @else { <a class="catalog-link" routerLink="/loja">Voltar ao mostruário <span aria-hidden="true">→</span></a> }
+    </div>
+    <p class="form-legal">Acesso protegido · Motore</p>
+  </section>
+</main>

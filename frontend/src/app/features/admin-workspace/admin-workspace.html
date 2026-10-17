@@ -1,0 +1,189 @@
+<section class="workspace">
+  <header class="page-heading">
+    <div>
+      <p class="breadcrumb">Gestão da loja <span>/</span> {{ config.title }}</p>
+      <h1>{{ config.title }}</h1>
+      <p class="description">{{ config.description }}</p>
+    </div>
+    @if (section !== 'veiculos' && section !== 'clientes' && section !== 'notas-fiscais') {
+      <button class="primary-button" type="button" (click)="abrirNovo()"><span aria-hidden="true">＋</span> Novo cadastro</button>
+    }
+  </header>
+
+  @if (sucesso()) { <p class="notice success" role="status">{{ sucesso() }}</p> }
+  @if (erro()) { <p class="notice error" role="alert">{{ erro() }}</p> }
+
+  @if (section === 'clientes') {
+    <div class="split-layout">
+      <section class="panel lookup-panel">
+        <h2>Buscar cliente por CPF</h2>
+        <p>Use o CPF da pessoa física para consultar a associação de cliente.</p>
+        <form class="inline-search" (submit)="$event.preventDefault(); buscarCliente()">
+          <label class="sr-only" for="cpf-search">CPF</label><input id="cpf-search" [value]="busca()" (input)="busca.set($any($event.target).value)" placeholder="000.000.000-00" inputmode="numeric" maxlength="14">
+          <button class="primary-button" type="submit" [disabled]="carregando()">Buscar</button>
+        </form>
+        @if (resultadoCliente(); as cliente) {
+          <div class="result-card">
+            <div><span class="field-label">Identificação</span><strong>Cliente #{{ cliente['id'] }}</strong></div>
+            <div><span class="field-label">Pessoa vinculada</span><strong>{{ cliente['pessoaId'] }} · {{ cliente['tipoPessoa'] === 'FISICA' ? 'Pessoa física' : 'Pessoa jurídica' }}</strong></div>
+            <div><span class="field-label">Situação</span><strong>{{ cliente['ativo'] ? 'Ativo' : 'Inativo' }}</strong></div>
+            <button class="danger-link" type="button" (click)="excluirCliente()">Remover associação</button>
+          </div>
+        }
+      </section>
+      <section class="panel association-panel">
+        <h2>Associar pessoa como cliente</h2>
+        <p>A associação não cria nem remove a Pessoa. Para pessoa física, consulte primeiro pelo CPF.</p>
+        <label for="person-select">Pessoa cadastrada</label>
+        <select id="person-select" [value]="pessoaIdCliente()" (change)="pessoaIdCliente.set($any($event.target).value)">
+          <option value="">Selecione uma pessoa</option>
+          @for (pessoa of pessoasDisponiveis(); track pessoa.id) { <option [value]="pessoa.id">{{ pessoa.nome }} · {{ pessoa.tipoPessoa }}</option> }
+        </select>
+        <button class="primary-button" type="button" (click)="criarCliente()">Associar cliente</button>
+      </section>
+    </div>
+  } @else if (section === 'notas-fiscais') {
+    <div class="invoice-layout">
+      <section class="panel invoice-panel">
+        <div class="panel-title"><div><h2>Emitir nota fiscal</h2><p>A nota e os itens são persistidos juntos.</p></div>
+          <div class="segmented" role="group" aria-label="Tipo de nota">
+            <button type="button" [class.selected]="isEntrada()" (click)="setTipoNota(true)">Entrada</button>
+            <button type="button" [class.selected]="!isEntrada()" (click)="setTipoNota(false)">Saída</button>
+          </div>
+        </div>
+        <form [formGroup]="notaForm" (ngSubmit)="salvarNota()">
+          <div class="form-grid">
+            <label>Número<input formControlName="numero" required></label>
+            <label>Série<input formControlName="serie" required></label>
+            <label>Data de emissão<input type="date" formControlName="dataEmissao" required></label>
+            @if (isEntrada()) { <label>Fornecedor (ID)<input type="number" min="1" formControlName="fornecedorId" placeholder="ID do fornecedor" required></label> }
+            @else { <label>Cliente (ID)<input type="number" min="1" formControlName="clienteId" placeholder="ID do cliente" required></label> }
+          </div>
+          <div class="form-divider"><span>Item da nota</span></div>
+          @if (isEntrada()) {
+            <div class="form-grid">
+              <label class="wide-field">Descrição<input formControlName="descricao" maxlength="500" required></label>
+              <label>Modelo<input formControlName="modelo" maxlength="100" required></label>
+              <label>Marca<select formControlName="marcaId" required><option value="">Selecione</option>@for (marca of marcas(); track marca.id) {<option [value]="marca.id">{{ marca.nome }}</option>}</select></label>
+              <label>Ano fabricação<input type="number" formControlName="anoFabricacao" min="1886" required></label>
+              <label>Ano modelo<input type="number" formControlName="anoModelo" min="1886" required></label>
+              <label>Cor<input formControlName="cor" maxlength="40" required></label>
+              <label>Placa<input formControlName="placa" maxlength="10"></label>
+              <label>Chassi<input formControlName="chassi" maxlength="17" required></label>
+              <label>Renavam<input formControlName="renavam" maxlength="11"></label>
+              <label>Quilometragem<input type="number" formControlName="quilometragem" min="0"></label>
+              <label>Valor de custo<input type="number" formControlName="valorCusto" min="0" step="0.01" required></label>
+              <label>Preço de venda<input type="number" formControlName="valorVenda" min="0" step="0.01" required></label>
+              <label>Valor unitário da NF<input type="number" formControlName="valorUnitario" min="0" step="0.01" required></label>
+            </div>
+          } @else {
+            <div class="form-grid">
+              <label>ID do veículo / produto<input type="number" min="1" formControlName="produtoId" required></label>
+              <label>Quantidade<input type="number" value="1" disabled aria-label="Quantidade de veículos"></label>
+              <label>Valor unitário<input type="number" formControlName="valorUnitario" min="0" step="0.01" required></label>
+            </div>
+            <p class="inline-note">Ao emitir a saída, o veículo passa automaticamente para VENDIDO.</p>
+          }
+          <button class="primary-button" type="submit" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : 'Emitir nota fiscal' }}</button>
+        </form>
+      </section>
+      <section class="panel lookup-panel">
+        <h2>Consultar nota</h2><p>A API permite consulta por identificador.</p>
+        <form class="inline-search" (submit)="$event.preventDefault(); buscarNota()"><label class="sr-only" for="nota-id">ID da nota</label><input id="nota-id" type="number" min="1" [value]="numeroNotaConsulta()" (input)="numeroNotaConsulta.set($any($event.target).value)" placeholder="ID da nota fiscal"><button class="secondary-button">Buscar</button></form>
+        @if (notaEncontrada(); as nf) {
+          <div class="result-card note-result">
+            <strong>NF {{ nf['numero'] }} / série {{ nf['serie'] }}</strong>
+            <span>{{ nf['entrada'] ? 'Entrada' : 'Saída' }} · {{ nf['dataEmissao'] | date:'dd/MM/yyyy' }}</span>
+            <strong>{{ nf['valorTotal'] | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
+            <button class="danger-button" type="button" (click)="excluirNota()">Excluir nota</button>
+          </div>
+        }
+        <p class="inline-note">A API ainda não oferece consulta de coleção para listar o histórico.</p>
+      </section>
+    </div>
+  } @else if (section === 'veiculos') {
+    <section class="panel">
+      <form class="filter-bar" (submit)="$event.preventDefault(); carregarVeiculos()">
+        <label>Modelo<input [value]="filtroModelo()" (input)="filtroModelo.set($any($event.target).value)" placeholder="Ex.: Giulia"></label>
+        <label>Ano-modelo<input type="number" [value]="filtroAno()" (input)="filtroAno.set($any($event.target).value)" placeholder="2025"></label>
+        <label>Marca<select [value]="filtroMarca()" (change)="filtroMarca.set($any($event.target).value)"><option value="">Todas</option>@for (marca of marcas(); track marca.id) {<option [value]="marca.id">{{ marca.nome }}</option>}</select></label>
+        <label>Status<select [value]="filtroStatus()" (change)="filtroStatus.set($any($event.target).value)"><option value="">Todos</option><option value="DISPONIVEL">Disponível</option><option value="RESERVADO">Reservado</option><option value="VENDIDO">Vendido</option></select></label>
+        <button class="primary-button">Filtrar estoque</button>
+      </form>
+      <p class="inline-note">O cadastro de um veículo é feito por uma nota fiscal de entrada. Não há edição ou exclusão direta no estoque.</p>
+      <ng-container *ngTemplateOutlet="table"></ng-container>
+    </section>
+    @if (detalheVeiculo(); as veiculo) {
+      <div class="modal-backdrop" (click)="detalheVeiculo.set(null)">
+        <section class="dialog detail-dialog" role="dialog" aria-modal="true" aria-labelledby="vehicle-title" (click)="$event.stopPropagation()">
+          <button class="close-button" type="button" aria-label="Fechar detalhes" (click)="detalheVeiculo.set(null)">×</button>
+          <h2 id="vehicle-title">{{ veiculo['modelo'] }} · {{ veiculo['marcaNome'] }}</h2>
+          <p>{{ veiculo['descricao'] }}</p>
+          <dl class="detail-grid">@for (item of detalheVeiculoCampos; track item.key) {<div><dt>{{ item.label }}</dt><dd>{{ valor(veiculo, item.key) }}</dd></div>}</dl>
+        </section>
+      </div>
+    }
+  } @else {
+    <section class="panel">
+      <div class="toolbar">
+        <label class="search-field"><span aria-hidden="true">⌕</span><input [value]="busca()" (input)="busca.set($any($event.target).value)" placeholder="Buscar neste cadastro" aria-label="Buscar neste cadastro"></label>
+        <span class="result-count">{{ filteredRows().length }} registros</span>
+      </div>
+      <ng-container *ngTemplateOutlet="table"></ng-container>
+    </section>
+  }
+</section>
+
+<ng-template #table>
+  @if (carregando()) { <div class="empty-state" role="status">Carregando dados…</div> }
+  @else if (filteredRows().length === 0) { <div class="empty-state"><span class="empty-mark" aria-hidden="true">◇</span><strong>Nenhum registro encontrado</strong><span>Quando houver dados cadastrados, eles aparecerão aqui.</span></div> }
+  @else {
+    <div class="table-scroll"><table><thead><tr>@for (col of config.columns; track col.key) {<th>{{ col.label }}</th>}<th class="actions-heading">Ações</th></tr></thead>
+      <tbody>@for (row of filteredRows(); track row.id) {
+        <tr (dblclick)="section === 'veiculos' ? mostrarVeiculo(row) : null">
+          @for (col of config.columns; track col.key) {
+            <td>
+              @if (col.key === 'status' || col.key === 'ativo') { <span class="status" [ngClass]="{'status-good': row['ativo'] || row['status'] === 'DISPONIVEL', 'status-bad': row['ativo'] === false || row['status'] === 'VENDIDO', 'status-muted': row['status'] === 'RESERVADO'}"><i></i>{{ valor(row, col.key) }}</span> }
+              @else if (col.key === 'valorVenda') { <strong>{{ row['valorVenda'] | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong> }
+              @else { {{ valor(row, col.key) }} }
+            </td>
+          }
+          <td class="row-actions">
+            @if (section === 'veiculos') { <button type="button" class="icon-button" [attr.aria-label]="'Ver detalhes de ' + row['modelo']" (click)="mostrarVeiculo(row)">Detalhes</button> }
+            @else { <button type="button" class="icon-button" [attr.aria-label]="'Editar registro ' + row['id']" (click)="editar(row)">Editar</button><button type="button" class="icon-button danger-text" [attr.aria-label]="'Excluir registro ' + row['id']" (click)="excluir(row)">Excluir</button> }
+          </td>
+        </tr>
+      }</tbody>
+    </table></div>
+  }
+</ng-template>
+
+@if (modalAberto()) {
+  <div class="modal-backdrop" (click)="fecharModal()">
+    <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" (click)="$event.stopPropagation()">
+      <header class="dialog-header"><div><h2 id="dialog-title">{{ tituloAcao() }}</h2><p>{{ config.title }} · informações administrativas</p></div><button class="close-button" type="button" aria-label="Fechar formulário" (click)="fecharModal()">×</button></header>
+      <form [formGroup]="form" (ngSubmit)="salvar()" class="dialog-form">
+        <div class="form-grid">
+          @for (field of config.fields; track field.name) {
+            @if (fieldVisible(field.name)) {
+              <label [class.wide-field]="['nome','email','razaoSocial','nomeFantasia','logradouro','complemento'].includes(field.name)">
+                {{ field.label }}
+                @if (field.type === 'select') {
+                  <select [formControlName]="field.name" [required]="field.required ?? false"><option value="">Selecione</option>@for (option of field.options ?? []; track option.id) {<option [value]="option.id">{{ option.nome }}</option>}</select>
+                } @else if (field.type === 'checkbox') {
+                  <span class="checkbox-row"><input type="checkbox" [formControlName]="field.name"><span>Ativo para operações da loja</span></span>
+                } @else {
+                  <input [type]="field.type ?? (field.name.toLowerCase().includes('email') ? 'email' : 'text')" [formControlName]="field.name" [required]="field.required ?? false" [attr.maxlength]="field.maxLength" [attr.minlength]="field.name === 'senha' ? 15 : null" [attr.inputmode]="field.name === 'cep' || field.name === 'cpf' ? 'numeric' : null" (blur)="field.name === 'cep' ? consultarCep() : null">
+                }
+                @if (form.get(field.name)?.touched && form.get(field.name)?.invalid) {<small class="field-error">Confira este campo.</small>}
+              </label>
+            }
+          }
+        </div>
+        @if (cepAviso()) {<p class="inline-note" role="status">{{ cepAviso() }}</p>}
+        <footer class="dialog-actions"><button type="button" class="secondary-button" (click)="fecharModal()">Cancelar</button><button class="primary-button" type="submit" [disabled]="salvando()">{{ salvando() ? 'Salvando…' : 'Salvar cadastro' }}</button></footer>
+      </form>
+    </section>
+  </div>
+}
+
